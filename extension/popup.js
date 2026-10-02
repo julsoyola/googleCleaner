@@ -79,14 +79,18 @@ const el = {
   confirmOkBtn: document.getElementById("confirmOkBtn"),
 };
 
-const TYPE_ICON = {
-  "application/vnd.google-apps.document": "\uD83D\uDCC4",
-  "application/vnd.google-apps.spreadsheet": "\uD83D\uDCCA",
-  "application/vnd.google-apps.presentation": "\uD83D\uDDBC",
-  "application/vnd.google-apps.folder": "\uD83D\uDCC1",
-  "application/vnd.google-apps.shortcut": "\u2197",
-  "application/pdf": "\uD83D\uDCD5",
+const TYPE_ICON_FILE = {
+  "application/vnd.google-apps.document": "docs",
+  "application/vnd.google-apps.spreadsheet": "sheets",
+  "application/vnd.google-apps.presentation": "slides",
+  "application/pdf": "pdf",
+  "application/vnd.google-apps.folder": "folder",
 };
+
+function getTypeIconPath(mimeType) {
+  const name = TYPE_ICON_FILE[mimeType] || (mimeType && mimeType.startsWith("image/") ? "image" : "file");
+  return `icons/types/${name}.svg`;
+}
 
 const TYPE_LABEL = {
   "application/vnd.google-apps.document": "Google Docs",
@@ -96,6 +100,10 @@ const TYPE_LABEL = {
   "application/vnd.google-apps.shortcut": "Shortcut",
   "application/pdf": "PDF",
 };
+
+function getTypeLabel(mimeType) {
+  return TYPE_LABEL[mimeType] || (mimeType && mimeType.startsWith("image/") ? "Image" : "File");
+}
 
 function formatModified(iso) {
   const d = new Date(iso);
@@ -306,10 +314,11 @@ function buildFileRow(file, { onToggle }) {
     onToggle(checkbox.checked);
   });
 
-  const typeIcon = document.createElement("span");
+  const typeIcon = document.createElement("img");
   typeIcon.className = "file-type-icon";
+  typeIcon.src = getTypeIconPath(file.mimeType);
+  typeIcon.alt = "";
   typeIcon.setAttribute("aria-hidden", "true");
-  typeIcon.textContent = TYPE_ICON[file.mimeType] || "\uD83D\uDCC4";
 
   const main = document.createElement("span");
   main.className = "file-main";
@@ -317,10 +326,11 @@ function buildFileRow(file, { onToggle }) {
   const name = document.createElement("span");
   name.className = "file-name";
   name.textContent = file.name; // text only, never HTML
+  name.title = file.name; // full name accessible on hover when ellipsized
 
   const meta = document.createElement("span");
   meta.className = "file-meta";
-  meta.textContent = `${TYPE_LABEL[file.mimeType] || "File"} \u00b7 ${formatModified(file.modifiedTime)}`;
+  meta.textContent = `${getTypeLabel(file.mimeType)} \u00b7 ${formatModified(file.modifiedTime)}`;
 
   main.append(name, meta);
   li.append(checkbox, typeIcon, main);
