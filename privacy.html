@@ -2,17 +2,51 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>rclone Drive Manager - Privacy Policy</title>
+  <title>GoogleCleaner - Privacy Policy</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 </head>
 <body>
   <h1>Privacy Policy</h1>
-  <p>This application is a private, personal-use tool used only by its owner to manage
-     and organize files in their own Google Drive account via <a href="https://rclone.org/">rclone</a>.</p>
-  <p>It does not collect, store, transmit, or share any personal data, files, or account
-     information belonging to any user, and it has no users other than its owner.</p>
-  <p>Any data accessed through the Google Drive API is used exclusively by the owner for
-     local file management purposes and is never sold, shared, or disclosed to third parties.</p>
-  <p>For questions about this policy, contact the repository owner via GitHub.</p>
+  <p>Last updated: October 1, 2026.</p>
+  <p>GoogleCleaner is a Chrome extension for reviewing and filtering items in your
+     Google Drive and moving user-selected items to Trash.</p>
+  <p>The extension accesses your Google account email address and display name, OAuth
+     access tokens, and Google Drive metadata: item IDs, names, types, modification
+     dates, sizes, and links. The display name is requested but not used. Document
+     contents are not downloaded or read.</p>
+  <p>OAuth access tokens are managed through Chrome's <code>chrome.identity</code> API,
+     held in memory by the extension, and sent to Google for authorized API requests.
+     The extension does not access passwords or store tokens in cleanup jobs.</p>
+  <p>Drive metadata and your search, filter, sorting, and selection choices are
+     processed in the extension's memory. Cleanup jobs are stored on your device
+     using <code>chrome.storage.local</code>. They include account email, a job ID,
+     selected item IDs and names, timestamps, progress, attempt counts, errors,
+     reauthorization messages, and results. Reauthorization messages may include
+     the email of a different signed-in account.</p>
+  <p>Cleanup jobs and results remain locally until dismissed or replaced by a new
+     job. Disconnecting does not clear them. Completed jobs can be dismissed in
+     the extension; active or paused jobs must be completed before dismissal.</p>
+  <p>API requests go directly to Google. They send authorization tokens, listing
+     queries, pagination tokens, and selected item IDs with instructions to move
+     those items to Trash. Google returns account information, file metadata, and
+     API responses. The extension does not upload file names or its local results
+     log. Clicking an item's link opens the destination supplied by Google.</p>
+  <p>The audited extension code contains no analytics, advertising, or uploads to
+     developer servers. User data is not sold, used or transferred for purposes
+     unrelated to GoogleCleaner's functionality, or used or transferred to
+     determine creditworthiness or for lending purposes.</p>
+  <p>GoogleCleaner's use and transfer of information received from Google APIs
+     complies with the <a href="https://developers.google.com/terms/api-services-user-data-policy">Google API Services User Data Policy</a>,
+     including the Limited Use requirements.</p>
+  <p>To disconnect, choose Disconnect in the extension's account menu. This removes
+     the current cached access token and clears the popup's in-memory account and
+     file state; it does not revoke Google's authorization, clear saved cleanup
+     results, or guarantee that an existing background job stops. To revoke access,
+     open your <a href="https://myaccount.google.com/connections">Google Account connections settings</a>,
+     select GoogleCleaner, and remove its access. Revocation prevents subsequent
+     authorized requests but does not remove locally saved results.</p>
+  <p>For questions about this policy, contact the repository owner via
+     <a href="https://github.com/julsoyola/googleCleaner">GitHub</a>.
+     No dedicated contact email has been provided.</p>
 </body>
 </html>
