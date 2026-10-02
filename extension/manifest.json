@@ -1,0 +1,31 @@
+{
+  "manifest_version": 3,
+  "name": "GoogleCleaner",
+  "version": "1.0.0",
+  "description": "Personal-use tool to review your own Google Drive files and move selected items to Trash.",
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "GoogleCleaner",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "32": "icons/icon32.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "permissions": ["identity", "storage", "alarms"],
+  "host_permissions": ["https://www.googleapis.com/*"],
+  "oauth2": {
+    "client_id": "1058637387456-3ojl1uf6o9jf8f9t7st223uh9bj2ff6f.apps.googleusercontent.com",
+    "scopes": ["https://www.googleapis.com/auth/drive"]
+  }
+}

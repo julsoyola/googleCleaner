@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>GoogleCleaner</title>
+<link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <main class="window">
+    <div class="title-bar">
+      <img class="title-icon" src="icons/icon32.png" alt="" aria-hidden="true">
+      <h1 class="title-text">GoogleCleaner</h1>
+      <button id="closeBtn" type="button" class="title-close" aria-label="Close popup">&times;</button>
+    </div>
+
+    <div class="account-row">
+      <span class="avatar" id="avatarInitial" aria-hidden="true">?</span>
+      <span id="accountEmail" class="account-email">Not connected</span>
+      <button id="signOutBtn" type="button" class="icon-btn hidden" aria-label="Sign out of GoogleCleaner" title="Sign out">&#9881;</button>
+    </div>
+
+    <section id="configWarning" class="banner banner-warning hidden" role="alert">
+      Set your real Chrome extension OAuth client ID in <code>manifest.json</code> before connecting.
+    </section>
+    <section id="errorBanner" class="banner banner-error hidden" role="alert"></section>
+
+    <section id="connectSection" class="connect-panel">
+      <button id="connectBtn" type="button" class="btn btn-primary">Connect Google Drive</button>
+    </section>
+
+    <div id="appBody" class="app-body hidden">
+      <!-- Files tab -->
+      <section id="tabFiles" class="tab-panel" role="tabpanel" aria-labelledby="navFiles" tabindex="0">
+        <div class="search-row">
+          <span class="search-icon" aria-hidden="true">&#128269;</span>
+          <label for="searchInput" class="sr-only">Search files</label>
+          <input id="searchInput" type="text" placeholder="Search files">
+        </div>
+
+        <div class="dropdown-row">
+          <label for="filterTypeSelect" class="sr-only">Filter by file type</label>
+          <select id="filterTypeSelect" class="dropdown">
+            <option value="all">All files</option>
+            <option value="doc">Google Docs</option>
+            <option value="sheet">Google Sheets</option>
+            <option value="slide">Google Slides</option>
+            <option value="pdf">PDFs</option>
+            <option value="folder">Folders</option>
+          </select>
+
+          <label for="dateFilterSelect" class="sr-only">Last modified</label>
+          <select id="dateFilterSelect" class="dropdown">
+            <option value="any">Last modified</option>
+            <option value="7d">Past 7 days</option>
+            <option value="30d">Past 30 days</option>
+            <option value="1y">Past year</option>
+            <option value="month">Choose month</option>
+            <option value="year">Choose year</option>
+            <option value="range">Custom range</option>
+          </select>
+
+          <label for="sortSelect" class="sr-only">Sort by</label>
+          <select id="sortSelect" class="dropdown">
+            <option value="name-asc">Sort: Name A-Z</option>
+            <option value="oldest">Sort: Oldest modified</option>
+            <option value="newest">Sort: Newest modified</option>
+            <option value="largest">Sort: Largest first</option>
+          </select>
+
+          <button id="refreshBtn" type="button" class="btn btn-small">Refresh</button>
+        </div>
+
+        <p id="listStatus" class="status hidden" aria-live="polite"></p>
+
+        <ul id="fileList" class="file-list" aria-label="Your Google Drive files"></ul>
+      </section>
+
+      <!-- Filters tab -->
+      <section id="tabFilters" class="tab-panel hidden" role="tabpanel" aria-labelledby="navFilters" tabindex="0">
+        <h2 class="panel-title">Date filter details</h2>
+        <div class="date-sub-controls-group">
+          <span id="dateMonthControls" class="date-sub-controls hidden">
+            <label for="dateMonthInput">Month</label>
+            <input type="month" id="dateMonthInput">
+          </span>
+          <span id="dateYearControls" class="date-sub-controls hidden">
+            <label for="dateYearInput">Year</label>
+            <input type="number" id="dateYearInput" min="1990" max="2100" placeholder="e.g. 2024">
+          </span>
+          <span id="dateRangeControls" class="date-sub-controls hidden">
+            <label for="dateFromInput">From</label>
+            <input type="date" id="dateFromInput">
+            <label for="dateToInput">To</label>
+            <input type="date" id="dateToInput">
+          </span>
+        </div>
+        <p id="dateRangeError" class="field-error hidden" role="alert"></p>
+        <p id="storageSummary" class="status hidden" aria-live="polite"></p>
+        <p id="hiddenSelectedInfo" class="hidden-info hidden" aria-live="polite"></p>
+      </section>
+
+      <!-- Selected tab -->
+      <section id="tabSelected" class="tab-panel hidden" role="tabpanel" aria-labelledby="navSelected" tabindex="0">
+        <div class="selection-actions">
+          <button id="selectAllMatching" type="button" class="btn btn-small">Select all matching</button>
+          <button id="clearSelectionBtn" type="button" class="btn btn-small">Clear selection</button>
+        </div>
+        <p id="reviewCount" aria-live="polite"></p>
+        <ul id="reviewList" class="file-list" aria-label="All selected items, including items hidden by filters"></ul>
+      </section>
+
+      <!-- Activity tab -->
+      <section id="tabActivity" class="tab-panel hidden" role="tabpanel" aria-labelledby="navActivity" tabindex="0">
+        <section id="jobSection" class="hidden" aria-live="polite">
+          <p id="jobStatusText"></p>
+          <progress id="jobProgressBar" value="0" max="1"></progress>
+          <p class="progress-note">Closing this popup will not cancel the cleanup; it keeps running in the background.</p>
+          <p id="jobReauthNotice" class="warning-text hidden">
+            Authorization expired or was revoked.
+            <button id="reconnectBtn" type="button" class="btn btn-small">Reconnect</button>
+          </p>
+          <ul id="jobResultList" class="result-list"></ul>
+          <div class="job-actions">
+            <button id="retryFailedBtn" type="button" class="btn btn-small hidden">Retry failed</button>
+            <button id="dismissJobBtn" type="button" class="btn btn-small hidden">Dismiss</button>
+          </div>
+        </section>
+        <p id="noActivityText" class="status">No cleanup activity yet.</p>
+      </section>
+    </div>
+
+    <div id="selectionBar" class="selection-bar hidden">
+      <span id="selectedCount" class="selected-count" aria-live="polite">0 selected</span>
+      <div class="selection-bar-actions">
+        <button id="reviewSelectedBtn" type="button" class="btn btn-review">Review</button>
+        <button id="trashBtn" type="button" class="btn btn-trash" disabled>Move to Trash</button>
+      </div>
+    </div>
+
+    <nav id="bottomNav" class="bottom-nav hidden" role="tablist" aria-label="GoogleCleaner views">
+      <button id="navFiles" type="button" class="nav-btn" role="tab" data-tab="tabFiles" aria-selected="true" aria-controls="tabFiles" tabindex="0">
+        <span class="nav-icon" aria-hidden="true">&#128196;</span>Files
+      </button>
+      <button id="navFilters" type="button" class="nav-btn" role="tab" data-tab="tabFilters" aria-selected="false" aria-controls="tabFilters" tabindex="-1">
+        <span class="nav-icon" aria-hidden="true">&#9660;</span>Filters
+      </button>
+      <button id="navSelected" type="button" class="nav-btn" role="tab" data-tab="tabSelected" aria-selected="false" aria-controls="tabSelected" tabindex="-1">
+        <span class="nav-icon" aria-hidden="true">&#9745;</span>Selected
+      </button>
+      <button id="navActivity" type="button" class="nav-btn" role="tab" data-tab="tabActivity" aria-selected="false" aria-controls="tabActivity" tabindex="-1">
+        <span class="nav-icon" aria-hidden="true">&#8986;</span>Activity
+      </button>
+    </nav>
+  </main>
+
+  <div id="confirmOverlay" class="overlay hidden">
+    <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="confirmTitle">
+      <div class="title-bar">
+        <h2 id="confirmTitle" class="title-text">Confirm move to Trash</h2>
+      </div>
+      <div class="dialog-body">
+        <p id="confirmText"></p>
+        <p id="confirmSizeText" class="confirm-size-text"></p>
+        <p id="confirmFolderWarning" class="warning-text hidden">Trashing a folder also moves everything inside it to Trash.</p>
+        <div class="dialog-actions">
+          <button id="confirmCancelBtn" type="button" class="btn">Cancel</button>
+          <button id="confirmOkBtn" type="button" class="btn btn-trash">Move to Trash</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="lib.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>
