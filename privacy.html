@@ -38,10 +38,15 @@
   <p>GoogleCleaner's use and transfer of information received from Google APIs
      complies with the <a href="https://developers.google.com/terms/api-services-user-data-policy">Google API Services User Data Policy</a>,
      including the Limited Use requirements.</p>
-  <p>To disconnect, choose Disconnect in the extension's account menu. This removes
-     the current cached access token and clears the popup's in-memory account and
-     file state; it does not revoke Google's authorization, clear saved cleanup
-     results, or guarantee that an existing background job stops. To revoke access,
+  <p>To disconnect, choose Disconnect in the extension's account menu. This first
+     saves a user-disconnected pause for any active cleanup job and cancels its
+     scheduled wake-ups, then removes the current cached access token and clears
+     the popup's in-memory account and file state. No new requests to move items
+     to Trash are sent while the job is paused. A request
+     already sent may finish, and its result is saved. Progress and results remain
+     stored locally. Reconnecting does not resume cleanup automatically: choose
+     Resume explicitly after connecting with the same account. Disconnecting does
+     not revoke Google's authorization or clear saved results. To revoke access,
      open your <a href="https://myaccount.google.com/connections">Google Account connections settings</a>,
      select GoogleCleaner, and remove its access. Revocation prevents subsequent
      authorized requests but does not remove locally saved results.</p>
