@@ -4,12 +4,19 @@
   --cream-alt: #EFE8D6;
   --lavender: #C4BCDD;
   --lavender-pale: #E5DFF0;
+  --selected: #E5DFF0;
   --blush: #E9B9C7;
+  --pink: #E9B9C7;
   --plum: #302B3D;
+  --text: #302B3D;
   --meta: #706B7A;
+  --muted: #706B7A;
   --border-dark: #302B3D;
+  --border: #898390;
+  --highlight: #FFFFFF;
+  --bevel-shadow: #918A9F;
   --focus-ring: #1b4fd1;
-  --ui-font: -apple-system, BlinkMacSystemFont, "Segoe UI", Tahoma, sans-serif;
+  --ui-font: Tahoma, Arial, sans-serif;
 }
 
 * {
@@ -21,7 +28,7 @@ body {
   margin: 0;
   padding: 0;
   font-family: var(--ui-font);
-  font-size: 13px;
+  font-size: 14px;
   color: var(--plum);
   background: var(--cream);
 }
@@ -70,21 +77,21 @@ a:focus-visible {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 8px 10px;
+  padding: 8px 12px;
   background: var(--lavender);
   border-bottom: 1px solid var(--border-dark);
   flex-shrink: 0;
 }
 
 .title-icon {
-  width: 20px;
-  height: 20px;
+  width: 24px;
+  height: 24px;
   object-fit: contain;
 }
 
 .title-text {
   margin: 0;
-  font-size: 15px;
+  font-size: 20px;
   font-weight: 700;
   color: var(--plum);
 }
@@ -125,16 +132,16 @@ a:focus-visible {
   font-family: inherit;
   font-weight: 700;
   font-size: 13px;
-  color: var(--plum);
+  min-height: 36px;
+  color: var(--text);
   padding: 8px 14px;
   background: var(--lavender);
-  border: 1px solid var(--border-dark);
-  box-shadow: inset -1px -1px 0 rgba(0, 0, 0, 0.15), inset 1px 1px 0 rgba(255, 255, 255, 0.5);
+  border: 1px solid var(--border);
+  box-shadow: inset 1px 1px 0 var(--highlight), inset -1px -1px 0 var(--bevel-shadow);
 }
 
 .btn:active:not(:disabled) {
-  box-shadow: inset 1px 1px 0 rgba(0, 0, 0, 0.15);
-  transform: translate(1px, 1px);
+  box-shadow: inset -1px -1px 0 var(--highlight), inset 1px 1px 0 var(--bevel-shadow);
 }
 
 .btn:disabled {
@@ -145,6 +152,7 @@ a:focus-visible {
 .btn-small {
   padding: 6px 10px;
   font-size: 12px;
+  min-height: 30px;
 }
 
 .btn-primary {
@@ -152,7 +160,7 @@ a:focus-visible {
 }
 
 .btn-review {
-  background: var(--blush);
+  background: var(--pink);
 }
 
 .btn-trash {
@@ -276,12 +284,14 @@ a:focus-visible {
 
 #searchInput {
   width: 100%;
+  min-height: 36px;
   padding: 9px 10px 9px 30px;
   font-family: inherit;
-  font-size: 13px;
-  color: var(--plum);
+  font-size: 14px;
+  color: var(--text);
   background: #ffffff;
-  border: 1px solid var(--border-dark);
+  border: 1px solid var(--border);
+  box-shadow: inset 1px 1px 0 var(--bevel-shadow), inset -1px -1px 0 var(--highlight);
 }
 
 /* --- dropdown row --- */
@@ -304,16 +314,19 @@ input[type="month"],
 input[type="number"] {
   font-family: inherit;
   font-size: 12px;
+  min-height: 36px;
   padding: 7px 8px;
-  color: var(--plum);
+  color: var(--text);
   background: var(--lavender);
-  border: 1px solid var(--border-dark);
+  border: 1px solid var(--border);
+  box-shadow: inset 1px 1px 0 var(--highlight), inset -1px -1px 0 var(--bevel-shadow);
 }
 
 input[type="date"],
 input[type="month"],
 input[type="number"] {
   background: #ffffff;
+  box-shadow: inset 1px 1px 0 var(--bevel-shadow), inset -1px -1px 0 var(--highlight);
 }
 
 input[type="number"] {
@@ -407,7 +420,7 @@ input[type="number"] {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
-  background: #ffffff;
+  background: var(--cream);
   border: 1px solid var(--border-dark);
 }
 
@@ -434,9 +447,10 @@ input[type="number"] {
 
 .file-list li {
   display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  padding: 10px;
+  align-items: center;
+  gap: 12px;
+  min-height: 64px;
+  padding: 12px;
   border-bottom: 1px solid var(--cream-alt);
   cursor: pointer;
 }
@@ -446,7 +460,7 @@ input[type="number"] {
 }
 
 .file-list li.selected {
-  background: var(--lavender-pale);
+  background: var(--selected);
 }
 
 .file-list li:focus-within {
@@ -458,14 +472,13 @@ input[type="number"] {
   width: 17px;
   height: 17px;
   flex-shrink: 0;
-  margin-top: 2px;
 }
 
 .file-type-icon {
   flex-shrink: 0;
-  font-size: 16px;
-  width: 20px;
-  text-align: center;
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
 }
 
 .file-main {
@@ -475,8 +488,9 @@ input[type="number"] {
 
 .file-name {
   display: block;
-  font-weight: 700;
-  color: var(--plum);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -484,7 +498,8 @@ input[type="number"] {
 
 .file-meta {
   display: block;
-  font-size: 11px;
+  font-size: 12px;
+  margin-top: 4px;
   color: var(--meta);
   overflow: hidden;
   text-overflow: ellipsis;
