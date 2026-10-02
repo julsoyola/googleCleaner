@@ -15,26 +15,25 @@ const state = {
   selectedIds: new Set(),
   filter: "all",
   search: "",
-  sort: "name-asc",
+  sort: "oldest",
   dateFilter: "any",
   dateExtra: {},
 };
 
 const el = {
-  closeBtn: document.getElementById("closeBtn"),
-  avatarInitial: document.getElementById("avatarInitial"),
-  accountEmail: document.getElementById("accountEmail"),
-  signOutBtn: document.getElementById("signOutBtn"),
   configWarning: document.getElementById("configWarning"),
   errorBanner: document.getElementById("errorBanner"),
   connectSection: document.getElementById("connectSection"),
   connectBtn: document.getElementById("connectBtn"),
   appBody: document.getElementById("appBody"),
-  bottomNav: document.getElementById("bottomNav"),
-  selectionBar: document.getElementById("selectionBar"),
-  filterTypeSelect: document.getElementById("filterTypeSelect"),
-  searchInput: document.getElementById("searchInput"),
+  accountMenuBtn: document.getElementById("accountMenuBtn"),
+  accountEmail: document.getElementById("accountEmail"),
+  accountMenu: document.getElementById("accountMenu"),
+  switchAccountBtn: document.getElementById("switchAccountBtn"),
+  disconnectBtn: document.getElementById("disconnectBtn"),
   refreshBtn: document.getElementById("refreshBtn"),
+  searchInput: document.getElementById("searchInput"),
+  filterTypeSelect: document.getElementById("filterTypeSelect"),
   dateFilterSelect: document.getElementById("dateFilterSelect"),
   dateMonthControls: document.getElementById("dateMonthControls"),
   dateMonthInput: document.getElementById("dateMonthInput"),
@@ -46,16 +45,14 @@ const el = {
   dateRangeError: document.getElementById("dateRangeError"),
   sortSelect: document.getElementById("sortSelect"),
   selectAllMatching: document.getElementById("selectAllMatching"),
-  clearSelectionBtn: document.getElementById("clearSelectionBtn"),
-  reviewSelectedBtn: document.getElementById("reviewSelectedBtn"),
-  selectedCount: document.getElementById("selectedCount"),
-  trashBtn: document.getElementById("trashBtn"),
+  matchingCount: document.getElementById("matchingCount"),
   listStatus: document.getElementById("listStatus"),
   hiddenSelectedInfo: document.getElementById("hiddenSelectedInfo"),
   storageSummary: document.getElementById("storageSummary"),
   fileList: document.getElementById("fileList"),
-  jobSection: document.getElementById("jobSection"),
-  noActivityText: document.getElementById("noActivityText"),
+  jobBar: document.getElementById("jobBar"),
+  jobDetailsToggle: document.getElementById("jobDetailsToggle"),
+  jobDetails: document.getElementById("jobDetails"),
   jobStatusText: document.getElementById("jobStatusText"),
   jobProgressBar: document.getElementById("jobProgressBar"),
   jobReauthNotice: document.getElementById("jobReauthNotice"),
@@ -63,14 +60,23 @@ const el = {
   jobResultList: document.getElementById("jobResultList"),
   retryFailedBtn: document.getElementById("retryFailedBtn"),
   dismissJobBtn: document.getElementById("dismissJobBtn"),
+  bottomBar: document.getElementById("bottomBar"),
+  selectedCount: document.getElementById("selectedCount"),
+  clearSelectionBtn: document.getElementById("clearSelectionBtn"),
+  reviewSelectedBtn: document.getElementById("reviewSelectedBtn"),
+  reviewOverlay: document.getElementById("reviewOverlay"),
+  reviewAccountText: document.getElementById("reviewAccountText"),
+  reviewSizeText: document.getElementById("reviewSizeText"),
+  reviewFolderWarning: document.getElementById("reviewFolderWarning"),
+  reviewList: document.getElementById("reviewList"),
+  reviewCloseBtn: document.getElementById("reviewCloseBtn"),
+  reviewTrashBtn: document.getElementById("reviewTrashBtn"),
   confirmOverlay: document.getElementById("confirmOverlay"),
   confirmText: document.getElementById("confirmText"),
   confirmSizeText: document.getElementById("confirmSizeText"),
   confirmFolderWarning: document.getElementById("confirmFolderWarning"),
   confirmCancelBtn: document.getElementById("confirmCancelBtn"),
   confirmOkBtn: document.getElementById("confirmOkBtn"),
-  reviewCount: document.getElementById("reviewCount"),
-  reviewList: document.getElementById("reviewList"),
 };
 
 const TYPE_ICON = {
@@ -86,7 +92,7 @@ const TYPE_LABEL = {
   "application/vnd.google-apps.document": "Google Docs",
   "application/vnd.google-apps.spreadsheet": "Google Sheets",
   "application/vnd.google-apps.presentation": "Google Slides",
-  "application/vnd.google-apps.folder": "Google Drive",
+  "application/vnd.google-apps.folder": "Folder",
   "application/vnd.google-apps.shortcut": "Shortcut",
   "application/pdf": "PDF",
 };
@@ -144,6 +150,16 @@ function removeCachedToken(token) {
       return;
     }
     chrome.identity.removeCachedAuthToken({ token }, () => resolve());
+  });
+}
+
+function clearAllCachedTokens() {
+  return new Promise((resolve) => {
+    if (!chrome.identity.clearAllCachedAuthTokens) {
+      resolve();
+      return;
+    }
+    chrome.identity.clearAllCachedAuthTokens(() => resolve());
   });
 }
 
@@ -246,17 +262,20 @@ function updateDateRangeError() {
 }
 
 function updateStorageSummary() {
-  const filtered = getFilteredFiles();
   const selectedFiles = Array.from(state.selectedIds)
     .map((id) => state.filesById.get(id))
     .filter(Boolean);
   const { totalBytes, unknownCount } = GCLib.summarizeSize(selectedFiles);
 
-  let text = `${filtered.length} matching \u00b7 ${selectedFiles.length} selected \u00b7 ~${GCLib.formatBytes(totalBytes)} reported size`;
-  if (unknownCount > 0) {
-    text += ` (${unknownCount} selected item${unknownCount === 1 ? "" : "s"} have no reported size)`;
+  if (selectedFiles.length === 0) {
+    el.storageSummary.classList.add("hidden");
+    return;
   }
-  text += ". Folder contents aren't included, and this is not a guaranteed amount of space recovered.";
+  let text = `~${GCLib.formatBytes(totalBytes)} reported size for selected items`;
+  if (unknownCount > 0) {
+    text += ` (${unknownCount} with no reported size)`;
+  }
+  text += ". Folder contents aren't included; not a guaranteed amount recovered.";
   el.storageSummary.textContent = text;
   el.storageSummary.classList.remove("hidden");
 }
@@ -265,7 +284,7 @@ function updateHiddenSelectedInfo() {
   const filteredIds = new Set(getFilteredFiles().map((f) => f.id));
   const hiddenCount = Array.from(state.selectedIds).filter((id) => !filteredIds.has(id)).length;
   if (hiddenCount > 0) {
-    el.hiddenSelectedInfo.textContent = `${hiddenCount} selected item${hiddenCount === 1 ? "" : "s"} hidden by current filters. Use Review selected to see them.`;
+    el.hiddenSelectedInfo.textContent = `${hiddenCount} selected item${hiddenCount === 1 ? "" : "s"} hidden by current filters.`;
     el.hiddenSelectedInfo.classList.remove("hidden");
   } else {
     el.hiddenSelectedInfo.classList.add("hidden");
@@ -273,10 +292,6 @@ function updateHiddenSelectedInfo() {
 }
 
 // --- rendering ------------------------------------------------------------
-
-function closeAllFileMenus() {
-  document.querySelectorAll(".file-menu").forEach((m) => m.remove());
-}
 
 function buildFileRow(file, { onToggle }) {
   const li = document.createElement("li");
@@ -305,49 +320,26 @@ function buildFileRow(file, { onToggle }) {
 
   const meta = document.createElement("span");
   meta.className = "file-meta";
-  meta.textContent = `${TYPE_LABEL[file.mimeType] || "File"} \u00b7 Modified ${formatModified(file.modifiedTime)}`;
+  meta.textContent = `${TYPE_LABEL[file.mimeType] || "File"} \u00b7 ${formatModified(file.modifiedTime)}`;
 
   main.append(name, meta);
+  li.append(checkbox, typeIcon, main);
 
-  const menuWrap = document.createElement("span");
-  menuWrap.className = "file-menu-wrap";
+  if (file.webViewLink) {
+    const link = document.createElement("a");
+    link.className = "open-link";
+    link.href = file.webViewLink;
+    link.target = "_blank";
+    link.rel = "noopener noreferrer";
+    link.textContent = "\u2197";
+    link.setAttribute("aria-label", `Open ${file.name} in Drive`);
+    li.appendChild(link);
+  }
 
-  const menuBtn = document.createElement("button");
-  menuBtn.type = "button";
-  menuBtn.className = "file-menu-btn";
-  menuBtn.setAttribute("aria-label", `More actions for ${file.name}`);
-  menuBtn.setAttribute("aria-haspopup", "true");
-  menuBtn.textContent = "\u22EF";
-  menuBtn.addEventListener("click", (event) => {
-    event.stopPropagation();
-    const alreadyOpen = menuWrap.querySelector(".file-menu");
-    closeAllFileMenus();
-    if (alreadyOpen) return; // toggle: clicking again just closes it
-    const menu = document.createElement("span");
-    menu.className = "file-menu";
-    menu.setAttribute("role", "menu");
-    if (file.webViewLink) {
-      const link = document.createElement("a");
-      link.href = file.webViewLink;
-      link.target = "_blank";
-      link.rel = "noopener noreferrer";
-      link.textContent = "Open in Drive";
-      link.setAttribute("role", "menuitem");
-      link.setAttribute("aria-label", `Open ${file.name} in Drive`);
-      menu.appendChild(link);
-    }
-    menuWrap.appendChild(menu);
-  });
-
-  menuWrap.appendChild(menuBtn);
-
-  li.append(checkbox, typeIcon, main, menuWrap);
-
-  // Clicking the row toggles the checkbox once; the checkbox, the overflow
-  // menu button, and menu items are excluded so none double-toggles or is
-  // swallowed, and opening the menu / opening Drive never changes selection.
+  // Clicking the row toggles the checkbox once; the checkbox and the
+  // Open-in-Drive link are excluded so neither double-toggles nor changes selection.
   li.addEventListener("click", (event) => {
-    if (event.target === checkbox || event.target.closest(".file-menu-wrap")) return;
+    if (event.target === checkbox || event.target.closest("a")) return;
     checkbox.checked = !checkbox.checked;
     checkbox.dispatchEvent(new Event("change"));
   });
@@ -358,7 +350,6 @@ function buildFileRow(file, { onToggle }) {
 function renderFileList() {
   const filtered = getFilteredFiles();
   el.fileList.textContent = "";
-  closeAllFileMenus();
 
   for (const file of filtered) {
     const li = buildFileRow(file, {
@@ -371,8 +362,31 @@ function renderFileList() {
     el.fileList.appendChild(li);
   }
 
-  setStatus(filtered.length === 0 ? "No files match the current filters." : `${filtered.length} of ${state.files.length} files shown`);
+  el.matchingCount.textContent = `${filtered.length} file${filtered.length === 1 ? "" : "s"}`;
+  setStatus(filtered.length === 0 ? "No files match the current filters." : "");
   updateSelectedCount();
+}
+
+function updateSelectAllMatchingState() {
+  const filtered = getFilteredFiles();
+  if (filtered.length === 0) {
+    el.selectAllMatching.checked = false;
+    el.selectAllMatching.indeterminate = false;
+    el.selectAllMatching.disabled = true;
+    return;
+  }
+  el.selectAllMatching.disabled = false;
+  const selectedCountInFiltered = filtered.filter((f) => state.selectedIds.has(f.id)).length;
+  if (selectedCountInFiltered === 0) {
+    el.selectAllMatching.checked = false;
+    el.selectAllMatching.indeterminate = false;
+  } else if (selectedCountInFiltered === filtered.length) {
+    el.selectAllMatching.checked = true;
+    el.selectAllMatching.indeterminate = false;
+  } else {
+    el.selectAllMatching.checked = false;
+    el.selectAllMatching.indeterminate = true;
+  }
 }
 
 function updateSelectedCount() {
@@ -380,31 +394,37 @@ function updateSelectedCount() {
   el.selectedCount.textContent = `${count} selected`;
   el.clearSelectionBtn.disabled = count === 0;
   el.reviewSelectedBtn.disabled = count === 0;
+  el.reviewSelectedBtn.textContent = `Review (${count})`;
 
-  const filtered = getFilteredFiles();
-  el.selectAllMatching.disabled = filtered.length === 0;
-
+  updateSelectAllMatchingState();
   updateStorageSummary();
   updateHiddenSelectedInfo();
-  updateTrashButtonState();
-}
-
-async function updateTrashButtonState() {
-  const job = await getCurrentJob();
-  el.trashBtn.disabled = state.selectedIds.size === 0 || GCLib.isJobActive(job);
 }
 
 function getCurrentJob() {
   return sendMessage({ type: "getJob" }).then((resp) => (resp && resp.job) || null);
 }
 
-// --- review selected dialog -----------------------------------------------
+// --- review dialog -----------------------------------------------
 
 function renderReviewList() {
   const ids = Array.from(state.selectedIds);
-  el.reviewCount.textContent = `${ids.length} item${ids.length === 1 ? "" : "s"} selected`;
-  el.reviewList.textContent = "";
+  const selectedFiles = ids.map((id) => state.filesById.get(id)).filter(Boolean);
+  const { totalBytes, unknownCount } = GCLib.summarizeSize(selectedFiles);
 
+  el.reviewAccountText.textContent =
+    `Account: ${state.email}. ${ids.length} item${ids.length === 1 ? "" : "s"} selected.`;
+
+  let sizeText = `Reported size: ~${GCLib.formatBytes(totalBytes)}`;
+  if (unknownCount > 0) {
+    sizeText += ` (${unknownCount} item${unknownCount === 1 ? "" : "s"} have no reported size and aren't counted)`;
+  }
+  el.reviewSizeText.textContent = sizeText;
+
+  const hasFolder = selectedFiles.some((f) => f.mimeType === GCLib.MIME_BY_FILTER.folder);
+  el.reviewFolderWarning.classList.toggle("hidden", !hasFolder);
+
+  el.reviewList.textContent = "";
   for (const id of ids) {
     const file = state.filesById.get(id);
     if (!file) continue;
@@ -418,23 +438,29 @@ function renderReviewList() {
     });
     el.reviewList.appendChild(li);
   }
+  el.reviewTrashBtn.disabled = ids.length === 0;
 }
 
 function openReview() {
-  switchTab("tabSelected");
+  renderReviewList();
+  el.reviewOverlay.classList.remove("hidden");
+  el.reviewCloseBtn.focus();
+}
+
+function closeReview() {
+  el.reviewOverlay.classList.add("hidden");
+  el.reviewSelectedBtn.focus();
 }
 
 // --- job rendering ----------------------------------------------------
 
 function renderJob(job) {
-  el.noActivityText.classList.toggle("hidden", !!job);
   if (!job) {
-    el.jobSection.classList.add("hidden");
-    updateTrashButtonState();
+    el.jobBar.classList.add("hidden");
     return;
   }
 
-  el.jobSection.classList.remove("hidden");
+  el.jobBar.classList.remove("hidden");
   const counts = GCLib.jobCounts(job);
   const total = job.items.length;
   const done = counts.ok + counts.failed;
@@ -443,11 +469,11 @@ function renderJob(job) {
   el.jobProgressBar.value = done;
 
   if (job.status === "processing") {
-    el.jobStatusText.textContent = `Trashing items for ${job.account}: ${done} of ${total} processed (${counts.ok} moved, ${counts.failed} failed so far).`;
+    el.jobStatusText.textContent = `Cleaning up: ${done} of ${total} processed`;
   } else if (job.status === "paused_reauth") {
-    el.jobStatusText.textContent = `Paused: ${done} of ${total} processed.`;
+    el.jobStatusText.textContent = `Paused: ${done} of ${total} processed`;
   } else if (job.status === "done") {
-    el.jobStatusText.textContent = `Done for ${job.account}: ${counts.ok} moved to Trash, ${counts.failed} failed.`;
+    el.jobStatusText.textContent = `Done: ${counts.ok} moved, ${counts.failed} failed`;
   }
 
   el.jobReauthNotice.classList.toggle("hidden", job.status !== "paused_reauth");
@@ -466,13 +492,17 @@ function renderJob(job) {
 
   el.retryFailedBtn.classList.toggle("hidden", counts.failed === 0 || job.status === "processing");
   el.dismissJobBtn.classList.toggle("hidden", job.status !== "done");
-
-  updateTrashButtonState();
 }
 
 async function refreshJobView() {
   const job = await getCurrentJob();
   renderJob(job);
+}
+
+function toggleJobDetails() {
+  const expanded = el.jobDetailsToggle.getAttribute("aria-expanded") === "true";
+  el.jobDetailsToggle.setAttribute("aria-expanded", String(!expanded));
+  el.jobDetails.classList.toggle("hidden", expanded);
 }
 
 // --- flows ------------------------------------------------------------
@@ -493,6 +523,13 @@ async function loadFiles() {
   }
 }
 
+function showConnectedUI() {
+  el.accountEmail.textContent = state.email;
+  el.connectSection.classList.add("hidden");
+  el.appBody.classList.remove("hidden");
+  el.bottomBar.classList.remove("hidden");
+}
+
 async function connect() {
   clearError();
   if (isPlaceholderClientId()) {
@@ -504,13 +541,7 @@ async function connect() {
   try {
     state.token = await getAuthToken(true);
     state.email = await fetchAccountEmail();
-    el.accountEmail.textContent = state.email;
-    el.avatarInitial.textContent = (state.email[0] || "?").toUpperCase();
-    el.signOutBtn.classList.remove("hidden");
-    el.connectSection.classList.add("hidden");
-    el.appBody.classList.remove("hidden");
-    el.bottomNav.classList.remove("hidden");
-    el.selectionBar.classList.remove("hidden");
+    showConnectedUI();
     await loadFiles();
     await refreshJobView();
   } catch (err) {
@@ -524,23 +555,57 @@ async function connect() {
   }
 }
 
-async function signOut() {
-  clearError();
-  if (state.token) {
-    await removeCachedToken(state.token);
-  }
+function resetToSignedOut() {
   state.token = null;
   state.email = null;
   state.files = [];
   state.filesById = new Map();
   state.selectedIds.clear();
-  el.signOutBtn.classList.add("hidden");
   el.appBody.classList.add("hidden");
-  el.bottomNav.classList.add("hidden");
-  el.selectionBar.classList.add("hidden");
+  el.bottomBar.classList.add("hidden");
   el.connectSection.classList.remove("hidden");
   el.connectBtn.disabled = false;
   el.connectBtn.textContent = "Connect Google Drive";
+}
+
+async function disconnect() {
+  clearError();
+  closeAccountMenu();
+  if (state.token) {
+    await removeCachedToken(state.token);
+  }
+  resetToSignedOut();
+}
+
+async function switchAccount() {
+  clearError();
+  closeAccountMenu();
+  const job = await getCurrentJob();
+  if (GCLib.isJobActive(job)) {
+    showError("A cleanup job is running under the current account. Finish, retry, or dismiss it before switching accounts.");
+    return;
+  }
+  // Genuinely re-prompts the Google account chooser: clears every cached
+  // token for this extension, then requests a fresh interactive token.
+  await clearAllCachedTokens();
+  resetToSignedOut();
+  await connect();
+}
+
+function openAccountMenu() {
+  el.accountMenu.classList.remove("hidden");
+  el.accountMenuBtn.setAttribute("aria-expanded", "true");
+}
+
+function closeAccountMenu() {
+  el.accountMenu.classList.add("hidden");
+  el.accountMenuBtn.setAttribute("aria-expanded", "false");
+}
+
+function openConfirmFromReview() {
+  const count = state.selectedIds.size;
+  if (count === 0) return;
+  openConfirm();
 }
 
 function openConfirm() {
@@ -566,11 +631,12 @@ function openConfirm() {
 
 function closeConfirm() {
   el.confirmOverlay.classList.add("hidden");
-  el.trashBtn.focus();
+  el.reviewSelectedBtn.focus();
 }
 
 async function startTrashJob() {
   closeConfirm();
+  el.reviewOverlay.classList.add("hidden");
   // Snapshot the confirmed IDs now; later filter/selection changes in the
   // popup cannot alter a job already handed off to the background worker.
   const items = Array.from(state.selectedIds)
@@ -654,30 +720,6 @@ function applyDateFilterAndRerender() {
   }
 }
 
-// --- bottom nav tabs ---------------------------------------------------
-
-function switchTab(tabId, { focusTab = false } = {}) {
-  for (const panel of document.querySelectorAll(".tab-panel")) {
-    panel.classList.toggle("hidden", panel.id !== tabId);
-  }
-  let activeBtn = null;
-  for (const btn of el.bottomNav.querySelectorAll(".nav-btn")) {
-    const isActive = btn.dataset.tab === tabId;
-    btn.setAttribute("aria-selected", String(isActive));
-    btn.tabIndex = isActive ? 0 : -1;
-    if (isActive) activeBtn = btn;
-  }
-  if (focusTab && activeBtn) activeBtn.focus();
-  if (tabId === "tabSelected") renderReviewList();
-}
-
-function focusAdjacentTab(delta) {
-  const tabs = Array.from(el.bottomNav.querySelectorAll(".nav-btn"));
-  const current = tabs.findIndex((btn) => btn.getAttribute("aria-selected") === "true");
-  const next = (current + delta + tabs.length) % tabs.length;
-  switchTab(tabs[next].dataset.tab, { focusTab: true });
-}
-
 // --- wiring ------------------------------------------------------------
 
 function init() {
@@ -686,11 +728,19 @@ function init() {
     el.connectBtn.disabled = true;
   }
 
-  el.closeBtn.addEventListener("click", () => window.close());
-  el.signOutBtn.addEventListener("click", signOut);
-
   el.connectBtn.addEventListener("click", connect);
   el.refreshBtn.addEventListener("click", loadFiles);
+
+  el.accountMenuBtn.addEventListener("click", (event) => {
+    event.stopPropagation();
+    if (el.accountMenu.classList.contains("hidden")) openAccountMenu();
+    else closeAccountMenu();
+  });
+  el.disconnectBtn.addEventListener("click", disconnect);
+  el.switchAccountBtn.addEventListener("click", switchAccount);
+  document.addEventListener("click", (event) => {
+    if (!event.target.closest(".account-menu-wrap")) closeAccountMenu();
+  });
 
   el.filterTypeSelect.addEventListener("change", () => {
     state.filter = el.filterTypeSelect.value;
@@ -735,53 +785,28 @@ function init() {
   });
 
   el.selectAllMatching.addEventListener("click", () => {
-    // Only items matching every active filter (type + search + date).
-    getFilteredFiles().forEach((f) => state.selectedIds.add(f.id));
+    // Only items matching every active filter (type + search + date);
+    // unchecking deselects only matching items, preserving hidden selections.
+    const filtered = getFilteredFiles();
+    if (el.selectAllMatching.checked) {
+      filtered.forEach((f) => state.selectedIds.add(f.id));
+    } else {
+      filtered.forEach((f) => state.selectedIds.delete(f.id));
+    }
     renderFileList();
-    renderReviewList();
   });
 
   el.clearSelectionBtn.addEventListener("click", () => {
     state.selectedIds.clear();
     renderFileList();
-    renderReviewList();
   });
 
   el.reviewSelectedBtn.addEventListener("click", openReview);
+  el.reviewCloseBtn.addEventListener("click", closeReview);
+  el.reviewTrashBtn.addEventListener("click", openConfirmFromReview);
 
-  for (const btn of el.bottomNav.querySelectorAll(".nav-btn")) {
-    btn.addEventListener("click", () => switchTab(btn.dataset.tab));
-  }
+  el.jobDetailsToggle.addEventListener("click", toggleJobDetails);
 
-  el.bottomNav.addEventListener("keydown", (event) => {
-    if (event.key === "ArrowRight") {
-      event.preventDefault();
-      focusAdjacentTab(1);
-    } else if (event.key === "ArrowLeft") {
-      event.preventDefault();
-      focusAdjacentTab(-1);
-    } else if (event.key === "Home") {
-      event.preventDefault();
-      switchTab(el.bottomNav.querySelector(".nav-btn").dataset.tab, { focusTab: true });
-    } else if (event.key === "End") {
-      event.preventDefault();
-      const tabs = el.bottomNav.querySelectorAll(".nav-btn");
-      switchTab(tabs[tabs.length - 1].dataset.tab, { focusTab: true });
-    }
-  });
-
-  document.addEventListener("click", (event) => {
-    if (!event.target.closest(".file-menu-wrap")) closeAllFileMenus();
-  });
-
-  el.trashBtn.addEventListener("click", async () => {
-    const job = await getCurrentJob();
-    if (GCLib.isJobActive(job)) {
-      showError("A cleanup job is already running. Finish, retry, or dismiss it first.");
-      return;
-    }
-    openConfirm();
-  });
   el.confirmCancelBtn.addEventListener("click", closeConfirm);
   el.confirmOkBtn.addEventListener("click", startTrashJob);
 
@@ -792,6 +817,8 @@ function init() {
   document.addEventListener("keydown", (event) => {
     if (event.key !== "Escape") return;
     if (!el.confirmOverlay.classList.contains("hidden")) closeConfirm();
+    else if (!el.reviewOverlay.classList.contains("hidden")) closeReview();
+    else if (!el.accountMenu.classList.contains("hidden")) closeAccountMenu();
   });
 
   // Live updates while the popup is open, driven by the background job.
