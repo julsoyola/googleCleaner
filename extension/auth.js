@@ -21,7 +21,10 @@ globalThis.GCAuth = (() => {
     let response;
     try {
       response = await fetch(origin() + path, {
-        method: body ? "POST" : "GET", headers: { "Content-Type": "application/json" },
+        method: body ? "POST" : "GET", headers: {
+          "Content-Type": "application/json",
+          "X-GoogleCleaner-Extension": chrome.runtime.id,
+        },
         ...(body ? { body: JSON.stringify(body) } : {}),
         cache: "no-store", credentials: "omit", signal: AbortSignal.timeout(10000),
       });

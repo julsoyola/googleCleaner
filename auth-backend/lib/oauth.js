@@ -20,14 +20,18 @@ function prepare(req, res, method, settings) {
   res.setHeader("Referrer-Policy", "no-referrer");
   res.setHeader("X-Content-Type-Options", "nosniff");
   const origin = `chrome-extension://${settings.extensionId}`;
-  if (req.headers.origin !== origin) {
+  // Privileged extension requests can omit Origin. Accept an explicit ID
+  // in that case; neither this header nor Origin is an OAuth credential.
+  // Codes still require PKCE and refresh handles require authenticated decryption.
+  const identifiedExtension = !req.headers.origin && req.headers["x-googlecleaner-extension"] === settings.extensionId;
+  if (req.headers.origin !== origin && !identifiedExtension) {
     res.status(403).json({ error: "This endpoint is only available to the configured extension." });
     return false;
   }
   res.setHeader("Access-Control-Allow-Origin", origin);
-  res.setHeader("Vary", "Origin");
+  res.setHeader("Vary", "Origin, X-GoogleCleaner-Extension");
   res.setHeader("Access-Control-Allow-Methods", `${method}, OPTIONS`);
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, X-GoogleCleaner-Extension");
   if (req.method === "OPTIONS") { res.status(204).end(); return false; }
   if (req.method !== method) { res.setHeader("Allow", method); res.status(405).json({ error: "Method not allowed." }); return false; }
   return true;

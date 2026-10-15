@@ -15,10 +15,12 @@ function worker() {
     GC_AUTH_CONFIG: { authOrigin: "https://auth.example.test" }, URL, URLSearchParams, TextEncoder, Uint8Array, AbortSignal, crypto: webcrypto,
     btoa: value => Buffer.from(value, "binary").toString("base64"),
     chrome: {
+      runtime: { id: "acijddppbcekpnlddndfomahlpgcnfoe" },
       storage: { session: { get: async key => ({ [key]: storage[key] }), set: async data => Object.assign(storage, data), remove: async key => { delete storage[key]; } } },
       identity: { getRedirectURL: () => REDIRECT, launchWebAuthFlow: async options => launch(options) },
     },
     fetch: async (url, options) => {
+      assert.equal(options.headers["X-GoogleCleaner-Extension"], "acijddppbcekpnlddndfomahlpgcnfoe");
       const body = options.body && JSON.parse(options.body);
       requests.push({ url, body });
       const value = url.endsWith("/config") ? { clientId: "web-client", redirectUri: REDIRECT, scope: "https://www.googleapis.com/auth/drive" }

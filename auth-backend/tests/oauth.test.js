@@ -78,3 +78,17 @@ test("config endpoint never returns the server secret", () => {
     }
   }
 });
+
+test("privileged extension requests without Origin use the explicit extension ID", () => {
+  for (const method of ["GET", "POST"]) {
+    const res = { setHeader() {}, status() { return this; }, json() { assert.fail("matching extension request rejected"); } };
+    assert.equal(prepare({ method, headers: { "x-googlecleaner-extension": settings.extensionId } }, res, method, settings), true);
+  }
+});
+
+test("missing identity, wrong extension ID and conflicting origins stay rejected", () => {
+  for (const headers of [{}, { "x-googlecleaner-extension": "b".repeat(32) }, { origin: "https://other.invalid", "x-googlecleaner-extension": settings.extensionId }]) {
+    const res = { setHeader() {}, status(code) { assert.equal(code, 403); return this; }, json() {} };
+    assert.equal(prepare({ method: "GET", headers }, res, "GET", settings), false);
+  }
+});
