@@ -1,2 +1,8 @@
 .DS_Store
 /extension/key.pem
+
+node_modules/
+.vercel/
+.env*
+!.env.example
+client_secret*.json
