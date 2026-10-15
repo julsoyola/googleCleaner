@@ -64,6 +64,16 @@ a:focus-visible {
 
 /* --- window --- */
 
+.privacy-footer {
+  margin-top: auto;
+  padding: 6px 12px;
+  flex-shrink: 0;
+  border-top: 1px solid var(--border);
+  font-size: 11px;
+}
+
+.privacy-footer a { color: var(--plum); }
+
 .window {
   display: flex;
   flex-direction: column;

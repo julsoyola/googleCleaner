@@ -31,9 +31,10 @@ The account chooser uses a small Vercel auth service. Follow
 [`auth-backend/README.md`](auth-backend/README.md) to configure its
 Google Web OAuth client and Vercel environment variables.
 
-After setup, open the account menu → **Switch account** →
-**Continue with Google**. The app-styled window opens Google's own
-account chooser. One account is active at a time; old selections are
+After setup, choose **Switch account** in the account menu to open
+Google's account chooser directly, without an extra extension window.
+The extension popup reopens after successful sign-in when Chrome
+supports it (Chrome 127+). Otherwise, reopen it from the toolbar. One account is active at a time; old selections are
 cleared on successful sign-in. Active cleanup jobs block switching.
 
 Until configured, ordinary Chrome-profile sign-in still works, while
@@ -47,3 +48,13 @@ Selecting items and confirming **Move to Trash** moves only those explicitly sel
 
 See [`privacy.html`](privacy.html) for the privacy policy.
 
+
+## Public website and Google verification
+
+For a Vercel website project, use the repository root, framework Other,
+build command `node scripts/build-site.js`, and output directory `site`.
+The existing authentication project keeps `auth-backend` as its root.
+
+Google's current review requires an owned domain verified through DNS
+and a complete privacy policy. Follow
+[`docs/oauth-verification.md`](docs/oauth-verification.md).

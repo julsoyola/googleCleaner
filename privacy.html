@@ -2,71 +2,152 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>GoogleCleaner - Privacy Policy</title>
+  <title>GoogleCleaner Privacy Policy</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body { max-width: 76ch; margin: 40px auto; padding: 0 20px 40px; background: #F7F3E9; color: #302B3D; font: 16px/1.65 Arial, sans-serif; }
+    h1, h2 { line-height: 1.25; } h2 { margin-top: 32px; font-size: 1.25rem; }
+    a { color: #48356e; text-underline-offset: 3px; } li { margin-bottom: 8px; }
+    code { overflow-wrap: anywhere; } :focus-visible { outline: 2px solid #1b4fd1; outline-offset: 3px; }
+  </style>
 </head>
 <body>
-  <h1>Privacy Policy</h1>
+<main>
+  <p><a href="index.html">GoogleCleaner home</a></p>
+  <h1>GoogleCleaner Privacy Policy</h1>
   <p>Last updated: October 14, 2026.</p>
-  <p>GoogleCleaner is a Chrome extension for reviewing and filtering files and folders
-     you own in Google Drive and moving user-selected items to Trash.</p>
-  <p>The extension accesses your Google account email address and display name, OAuth
-     access tokens, and Google Drive metadata: item IDs, names, types, modification
-     dates, sizes, and links. The display name is requested but not used. Document
-     contents are not downloaded or read.</p>
-  <p>When the Vercel account chooser is configured, Google handles sign-in and
-     account selection in its own window. The extension validates the returned
-     OAuth state and uses PKCE to bind authorization codes to the sign-in request.
-     A developer-operated authentication service hosted on Vercel exchanges codes
-     and refreshes sessions with Google. It receives authorization codes, PKCE
-     verifiers, and encrypted refresh handles, and returns access tokens. It does
-     not receive Drive file metadata, file contents, or passwords. The service
-     does not persist tokens or log request bodies or token responses in its code.
-     Network requests are processed by Vercel as the hosting provider.</p>
-  <p>Access tokens and encrypted refresh handles are held in
-     <code>chrome.storage.session</code> during the browser session, outside
-     cleanup jobs. The service encrypts refresh handles using AES-256-GCM; handles
-     expire seven days after issuance. Restarting Chrome clears the extension's
-     session storage. Without the Vercel service configured, the extension uses
-     Chrome's native <code>chrome.identity.getAuthToken</code> token cache instead.
-     The extension never collects Google passwords or embeds the Web OAuth client
-     secret.</p>
-  <p>Drive metadata and your search, filter, sorting, and selection choices are
-     processed in the extension's memory. Cleanup jobs are stored on your device
-     using <code>chrome.storage.local</code>. They include account email, a job ID,
-     selected item IDs and names, timestamps, progress, attempt counts, errors,
-     reauthorization messages, and results. Reauthorization messages may include
-     the email of a different signed-in account.</p>
-  <p>Cleanup jobs and results remain locally until dismissed or replaced by a new
-     job. Disconnecting does not clear them. Completed jobs can be dismissed in
-     the extension; active or paused jobs must be completed before dismissal.</p>
-  <p>Drive API requests go directly to Google. They send authorization tokens, listing
-     queries, pagination tokens, and selected item IDs with instructions to move
-     those items to Trash. Google returns account information, file metadata, and
-     API responses. The extension does not upload file names or its local results
-     log. Clicking an item's link opens the destination supplied by Google.</p>
-  <p>The extension contains no analytics or advertising. The configured Vercel
-     authentication service receives only the authorization data described above;
-     file names, file contents, and cleanup results are not uploaded to it. User data is not sold, used or transferred for purposes
-     unrelated to GoogleCleaner's functionality, or used or transferred to
-     determine creditworthiness or for lending purposes.</p>
-  <p>GoogleCleaner's use and transfer of information received from Google APIs
-     complies with the <a href="https://developers.google.com/terms/api-services-user-data-policy">Google API Services User Data Policy</a>,
-     including the Limited Use requirements.</p>
-  <p>To disconnect, choose Disconnect in the extension's account menu. This first
-     saves a user-disconnected pause for any active cleanup job and cancels its
-     scheduled wake-ups, then clears the configured Vercel session from the browser (or removes the
-     current native cached access token) and clears the popup's in-memory account
-     and file state. No new requests to move items
-     to Trash are sent while the job is paused. A request
-     already sent may finish, and its result is saved. Progress and results remain
-     stored locally. Reconnecting does not resume cleanup automatically: choose
-     Resume explicitly after connecting with the same account. Disconnecting does
-     not revoke Google's authorization or clear saved results. To revoke access,
-     open your <a href="https://myaccount.google.com/connections">Google Account connections settings</a>,
-     select the extension's entry, and remove its access. Revocation prevents subsequent
-     authorized requests but does not remove locally saved results.</p>
-  <p>For privacy questions or support, email
-     <a href="mailto:julianaaoyola@gmail.com">julianaaoyola@gmail.com</a>.</p>
+  <p>This policy describes how GoogleCleaner, an independently developed Chrome
+    extension, accesses, uses, stores, shares, and deletes Google user data.
+    GoogleCleaner helps you review files and folders you own in Google Drive
+    and move only the items you select and confirm to Trash.</p>
+
+  <h2>Google data we access and why</h2>
+  <ul>
+    <li><strong>Account information:</strong> your Google account email identifies
+      the connected account and ensures a cleanup job runs only for its original
+      account. The Drive account response also requests your display name, but
+      GoogleCleaner does not display or otherwise use it.</li>
+    <li><strong>Drive file metadata:</strong> item IDs, names, MIME types,
+      modification dates, file sizes when available, and Drive links. This data
+      supports listing, search, filtering, sorting, selection review, size
+      summaries, and links back to Google Drive.</li>
+    <li><strong>Authorization data:</strong> OAuth authorization codes, PKCE
+      verifiers, access tokens, and refresh tokens or encrypted refresh handles.
+      These authorize the account access you approve and renew sessions.</li>
+    <li><strong>Cleanup records:</strong> account email, a job ID, selected item
+      IDs and names, timestamps, processing status, attempt counts, errors, and
+      results. These records support background processing, progress, and retry.
+      Account-mismatch errors can include the other account's email.</li>
+  </ul>
+  <p>GoogleCleaner requests <code>https://www.googleapis.com/auth/drive</code>
+    because it lists and manages existing files you own, including files not
+    created or opened by this app. Although this permission is broad, the code
+    does not download or read document contents. GoogleCleaner does not collect
+    your Google password, contacts, Gmail messages, or browsing history.</p>
+
+  <h2>How we use your data</h2>
+  <p>Google user data is used only to provide the visible account, file-review,
+    filtering, selection, and cleanup features described above. A confirmed
+    cleanup sends Google an instruction to move the selected item IDs to Trash.
+    Selecting a folder includes its contents. GoogleCleaner never permanently
+    deletes files or empties Trash, and does not resolve shortcut targets for
+    cleanup. Search text, filters, sort order, and selections are processed in
+    the extension's memory.</p>
+  <p>GoogleCleaner does not sell Google user data, use it for advertising,
+    profiling, creditworthiness, lending, or data-broker databases, or use it to
+    develop, improve, or train generalized or non-personalized AI or machine
+    learning models. The extension contains no advertising or analytics code.</p>
+
+  <h2>Who receives data</h2>
+  <ul>
+    <li><strong>Google:</strong> handles account sign-in and permission screens.
+      Drive requests go directly from the extension to Google's APIs, carrying
+      authorization tokens, listing queries, pagination tokens, and selected item
+      IDs for cleanup. Google returns account information, metadata, and results.</li>
+    <li><strong>The GoogleCleaner authentication service on Vercel:</strong>
+      exchanges authorization codes and PKCE verifiers with Google and refreshes
+      sessions. It receives codes, verifiers, and encrypted refresh handles;
+      it processes access and refresh tokens in memory and returns access tokens
+      and encrypted refresh handles to the extension. It does not receive Drive
+      file names, file contents, search text, selections, or cleanup results.</li>
+    <li><strong>Vercel as hosting provider:</strong> processes authentication
+      service traffic and may process operational request metadata, such as
+      network addresses, request paths, status codes, and timing, under its
+      <a href="https://vercel.com/legal/privacy-notice">Privacy Notice</a>.
+      Provider operational-log retention depends on the hosting configuration
+      and service terms. The auth service code does not log request bodies,
+      authorization tokens, or token responses.</li>
+  </ul>
+  <p>Google data is not shared with advertisers, data brokers, or AI training
+    services. GoogleCleaner's use and transfer of information received from
+    Google APIs adheres to the
+    <a href="https://developers.google.com/terms/api-services-user-data-policy">Google API Services User Data Policy</a>,
+    including its Limited Use requirements.</p>
+
+  <h2>Storage and retention</h2>
+  <ul>
+    <li><strong>File lists and interface choices:</strong> kept in the popup's
+      memory and cleared when that popup closes or its account state is reset.</li>
+    <li><strong>Authentication sessions:</strong> access tokens and encrypted
+      refresh handles are stored on your device in
+      <code>chrome.storage.session</code>. They survive popup closure but are
+      cleared by disconnecting, extension reload or removal, or restarting the
+      browser. Access-token expiry is set by Google. Encrypted refresh handles
+      expire seven days after each issuance; successful refresh can issue a
+      replacement handle. Switching accounts replaces the active session.</li>
+    <li><strong>Cleanup jobs and results:</strong> stored on your device in
+      <code>chrome.storage.local</code>. The latest job remains until you dismiss
+      a completed job, it is replaced by another job, or the extension's local
+      data is removed. Disconnecting does not delete these records. Active or
+      paused jobs cannot be dismissed through the current interface.</li>
+    <li><strong>Authentication service:</strong> has no application database and
+      does not persist codes or raw access or refresh tokens. It processes them
+      for the authentication request. Encrypted refresh handles are returned to
+      the browser rather than saved in a server-side account database.</li>
+  </ul>
+  <p>When the Vercel service is not configured, the fallback sign-in uses Chrome's
+    native <code>chrome.identity</code> token cache instead. The current configured
+    account chooser uses the Vercel flow described here.</p>
+
+  <h2>How data is protected</h2>
+  <p>Network requests to Google and the authentication service use HTTPS.
+    Sign-in validates OAuth state and the exact extension redirect, and uses
+    PKCE to bind authorization codes to the originating request. The Web OAuth
+    client secret stays in the server environment, outside the extension.
+    Refresh handles use authenticated AES-256-GCM encryption. Extension session
+    storage is not exposed to content scripts by this app. Cleanup jobs verify
+    their account before processing. Local cleanup records are stored in
+    Chrome's extension storage; GoogleCleaner does not apply additional
+    encryption to those records.</p>
+
+  <h2>Your controls and deletion</h2>
+  <ul>
+    <li><strong>Disconnect:</strong> pauses active cleanup, cancels its scheduled
+      wake-ups, clears the browser authentication session, and resets popup
+      account and file state. A request already sent to Google may finish and
+      its result is recorded. No new cleanup requests are dispatched while the
+      job remains paused. Reconnecting does not automatically resume that job.</li>
+    <li><strong>Remove local records:</strong> dismiss a completed job in the
+      extension. To clear all locally stored jobs and sessions, remove the
+      extension from <code>chrome://extensions</code>. Reinstalling starts with
+      fresh extension storage.</li>
+    <li><strong>Revoke Google access:</strong> open
+      <a href="https://myaccount.google.com/connections">Google Account connections</a>,
+      select the app entry, and remove access. Disconnecting alone does not
+      revoke Google authorization. Revocation does not remove local job records
+      or undo changes already made in Drive.</li>
+    <li><strong>Restore trashed files:</strong> use Google Drive's Trash and its
+      restoration controls. Retention and deletion of items in Drive are
+      governed by Google and your account settings, not by this extension.</li>
+  </ul>
+
+  <h2>Changes and contact</h2>
+  <p>Changes to data handling will be reflected in this policy and its update
+    date. For privacy questions or deletion assistance, contact
+    <a href="mailto:julianaaoyola@gmail.com">julianaaoyola@gmail.com</a>.
+    Do not send passwords, access tokens, or private file contents. Because
+    cleanup records are stored on your device, their removal must be performed
+    in your browser using the controls described above.</p>
+</main>
 </body>
 </html>
