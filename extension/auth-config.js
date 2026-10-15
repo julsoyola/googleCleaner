@@ -1,4 +1,3 @@
 "use strict";
-// Set this to the deployed auth-backend HTTPS origin (no path or trailing slash).
-// Empty keeps existing Chrome-profile sign-in working until setup is complete.
-globalThis.GC_AUTH_CONFIG = {"authOrigin":""};
+// Public auth service origin; never put client secrets here.
+globalThis.GC_AUTH_CONFIG = {"authOrigin":"https://googlecleaner-auth-backend.vercel.app"};

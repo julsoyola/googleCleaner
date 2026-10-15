@@ -24,10 +24,19 @@
   "background": {
     "service_worker": "background.js"
   },
-  "permissions": ["identity", "storage", "alarms"],
-  "host_permissions": ["https://www.googleapis.com/*"],
+  "permissions": [
+    "identity",
+    "storage",
+    "alarms"
+  ],
+  "host_permissions": [
+    "https://www.googleapis.com/*",
+    "https://googlecleaner-auth-backend.vercel.app/*"
+  ],
   "oauth2": {
     "client_id": "1058637387456-nr0gdht0tfji3bqt5f1t3p02jdj0id8v.apps.googleusercontent.com",
-    "scopes": ["https://www.googleapis.com/auth/drive"]
+    "scopes": [
+      "https://www.googleapis.com/auth/drive"
+    ]
   }
 }
