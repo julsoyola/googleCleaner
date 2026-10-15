@@ -4,16 +4,17 @@
   <meta charset="UTF-8">
   <title>GoogleCleaner Privacy Policy</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <style>
-    body { max-width: 76ch; margin: 40px auto; padding: 0 20px 40px; background: #F7F3E9; color: #302B3D; font: 16px/1.65 Arial, sans-serif; }
-    h1, h2 { line-height: 1.25; } h2 { margin-top: 32px; font-size: 1.25rem; }
-    a { color: #48356e; text-underline-offset: 3px; } li { margin-bottom: 8px; }
-    code { overflow-wrap: anywhere; } :focus-visible { outline: 2px solid #1b4fd1; outline-offset: 3px; }
-  </style>
+  <link rel="stylesheet" href="website.css">
 </head>
 <body>
-<main>
-  <p><a href="index.html">GoogleCleaner home</a></p>
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="site-header wrap">
+  <a class="brand" href="index.html"><span class="folder" aria-hidden="true"></span>GoogleCleaner<span class="spark" aria-hidden="true">✦</span></a>
+  <nav aria-label="Main navigation"><a href="index.html">GoogleCleaner home</a><a href="privacy.html" aria-current="page">Privacy Policy</a></nav>
+</header>
+<main id="main" class="wrap policy-main">
+  <div class="window policy-intro"><div class="window-bar"><span class="dots" aria-hidden="true"><i></i><i></i><i></i></span><span>Your data, explained</span></div><div class="policy-intro-body">
+
   <h1>GoogleCleaner Privacy Policy</h1>
   <p>Last updated: October 14, 2026.</p>
   <p>This policy describes how GoogleCleaner, an independently developed Chrome
@@ -21,7 +22,8 @@
     GoogleCleaner helps you review files and folders you own in Google Drive
     and move only the items you select and confirm to Trash.</p>
 
-  <h2>Google data we access and why</h2>
+</div></div>
+  <div class="policy-layout"><aside class="policy-nav"><p class="eyebrow">In this policy</p><nav aria-label="Policy sections"><a href="#data-access">Google data we access and why</a><a href="#data-use">How we use your data</a><a href="#data-sharing">Who receives data</a><a href="#storage">Storage and retention</a><a href="#security">How data is protected</a><a href="#your-controls">Your controls and deletion</a><a href="#contact">Changes and contact</a></nav></aside><article class="policy-copy" aria-label="Privacy policy details"><section id="data-access" class="policy-section">  <h2>Google data we access and why</h2>
   <ul>
     <li><strong>Account information:</strong> your Google account email identifies
       the connected account and ensures a cleanup job runs only for its original
@@ -45,7 +47,8 @@
     does not download or read document contents. GoogleCleaner does not collect
     your Google password, contacts, Gmail messages, or browsing history.</p>
 
-  <h2>How we use your data</h2>
+</section>
+<section id="data-use" class="policy-section">  <h2>How we use your data</h2>
   <p>Google user data is used only to provide the visible account, file-review,
     filtering, selection, and cleanup features described above. A confirmed
     cleanup sends Google an instruction to move the selected item IDs to Trash.
@@ -58,7 +61,8 @@
     develop, improve, or train generalized or non-personalized AI or machine
     learning models. The extension contains no advertising or analytics code.</p>
 
-  <h2>Who receives data</h2>
+</section>
+<section id="data-sharing" class="policy-section">  <h2>Who receives data</h2>
   <ul>
     <li><strong>Google:</strong> handles account sign-in and permission screens.
       Drive requests go directly from the extension to Google's APIs, carrying
@@ -84,7 +88,8 @@
     <a href="https://developers.google.com/terms/api-services-user-data-policy">Google API Services User Data Policy</a>,
     including its Limited Use requirements.</p>
 
-  <h2>Storage and retention</h2>
+</section>
+<section id="storage" class="policy-section">  <h2>Storage and retention</h2>
   <ul>
     <li><strong>File lists and interface choices:</strong> kept in the popup's
       memory and cleared when that popup closes or its account state is reset.</li>
@@ -109,7 +114,8 @@
     native <code>chrome.identity</code> token cache instead. The current configured
     account chooser uses the Vercel flow described here.</p>
 
-  <h2>How data is protected</h2>
+</section>
+<section id="security" class="policy-section">  <h2>How data is protected</h2>
   <p>Network requests to Google and the authentication service use HTTPS.
     Sign-in validates OAuth state and the exact extension redirect, and uses
     PKCE to bind authorization codes to the originating request. The Web OAuth
@@ -120,7 +126,8 @@
     Chrome's extension storage; GoogleCleaner does not apply additional
     encryption to those records.</p>
 
-  <h2>Your controls and deletion</h2>
+</section>
+<section id="your-controls" class="policy-section">  <h2>Your controls and deletion</h2>
   <ul>
     <li><strong>Disconnect:</strong> pauses active cleanup, cancels its scheduled
       wake-ups, clears the browser authentication session, and resets popup
@@ -141,13 +148,21 @@
       governed by Google and your account settings, not by this extension.</li>
   </ul>
 
-  <h2>Changes and contact</h2>
+</section>
+<section id="contact" class="policy-section">  <h2>Changes and contact</h2>
   <p>Changes to data handling will be reflected in this policy and its update
     date. For privacy questions or deletion assistance, contact
     <a href="mailto:julianaaoyola@gmail.com">julianaaoyola@gmail.com</a>.
     Do not send passwords, access tokens, or private file contents. Because
     cleanup records are stored on your device, their removal must be performed
     in your browser using the controls described above.</p>
+</section>
+</article></div>
 </main>
+<footer class="site-footer wrap">
+  <a class="footer-brand" href="index.html">GoogleCleaner</a>
+  <p>A little less clutter. A little more clarity.</p>
+  <nav aria-label="Footer navigation"><a href="index.html">Home</a><a href="privacy.html">Privacy Policy</a></nav>
+</footer>
 </body>
 </html>
