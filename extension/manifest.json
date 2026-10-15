@@ -1,7 +1,9 @@
 {
   "manifest_version": 3,
+  "minimum_chrome_version": "116",
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAwBYOE2hb4Gyhkfg7r0dXRctMx0zZ8OUBlm4FmzDyQItT/F01shje+HfobQHswDUAKjgH15GjxVnUbYjrd1kb7buTjFIvC6P+qxsjtUIHQNKVSCaBYNXnUqm7VrjIXp/4mQIJBDN13AzDUZAzoeunK/+S9tF9OJlj3qH4DwJOZrAuoPXT+CKKdUeEszXT5bYcq5W8aXkYrkkTow+vPC8ub3k9+2trpuiMRM83B3BFSsqbLpUrHIJX85eS78Gf8D5yOxhiMuBfJUO6ERHBAp84UjyLz8jaD/EaR/RDAR7YpiejTk1pXlHvube/2Cgu9s9j1DTUDMI9T1LTkfXfGoasPwIDAQAB",
   "name": "GoogleCleaner",
-  "version": "1.0.0",
+  "version": "1.0.3",
   "description": "Personal-use tool to review your own Google Drive files and move selected items to Trash.",
   "action": {
     "default_popup": "popup.html",
@@ -25,7 +27,7 @@
   "permissions": ["identity", "storage", "alarms"],
   "host_permissions": ["https://www.googleapis.com/*"],
   "oauth2": {
-    "client_id": "1058637387456-3ojl1uf6o9jf8f9t7st223uh9bj2ff6f.apps.googleusercontent.com",
+    "client_id": "1058637387456-nr0gdht0tfji3bqt5f1t3p02jdj0id8v.apps.googleusercontent.com",
     "scopes": ["https://www.googleapis.com/auth/drive"]
   }
 }

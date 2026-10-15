@@ -175,7 +175,7 @@ function createJob({ id, account, items }) {
     account,
     createdAt: now,
     updatedAt: now,
-    status: "processing", // processing | paused_reauth | done
+    status: "processing", // processing | paused_reauth | paused_disconnected | done
     items: items.map((it) => ({
       id: it.id,
       name: it.name,
@@ -226,7 +226,7 @@ function jobCounts(job) {
 }
 
 function isJobActive(job) {
-  return !!job && (job.status === "processing" || job.status === "paused_reauth");
+  return !!job && (job.status === "processing" || job.status === "paused_reauth" || job.status === "paused_disconnected");
 }
 
 function backoffDelayMs(attempt, baseMs, maxMs) {

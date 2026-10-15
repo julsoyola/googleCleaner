@@ -6,6 +6,7 @@
 // renders job state and sends control messages to it.
 
 const DRIVE_API = "https://www.googleapis.com/drive/v3/";
+let accountConnectionPending = false;
 
 const state = {
   token: null,
@@ -112,6 +113,7 @@ function formatModified(iso) {
 }
 
 function isPlaceholderClientId() {
+  if (globalThis.GC_AUTH_CONFIG && GC_AUTH_CONFIG.authOrigin) return false;
   const clientId = (chrome.runtime.getManifest().oauth2 || {}).client_id || "";
   return clientId.includes("YOUR_CHROME_EXTENSION_OAUTH_CLIENT_ID");
 }
@@ -138,20 +140,41 @@ function setStatus(message) {
 
 // --- auth helpers -----------------------------------------------------
 
-function getAuthToken(interactive) {
-  return new Promise((resolve, reject) => {
-    chrome.identity.getAuthToken({ interactive }, (token) => {
-      const err = chrome.runtime.lastError;
-      if (err || !token) {
-        reject(new Error(err ? err.message : "No auth token returned."));
-        return;
-      }
-      resolve(token);
+function getAuthToken(interactive, chooseAccount = false) {
+  if (globalThis.GC_AUTH_CONFIG && GC_AUTH_CONFIG.authOrigin) {
+    return sendMessage({ type: "authenticate", interactive, chooseAccount }).then(response => {
+      if (!response || !response.ok) throw new Error((response && response.error) || "Sign-in service did not respond.");
+      return response.token;
     });
+  }
+  if (chooseAccount) return Promise.reject(new Error("Set up the Vercel account chooser using auth-backend/README.md first."));
+  return new Promise((resolve, reject) => {
+    const timeout = setTimeout(() => {
+      reject(new Error("Google sign-in did not finish. Check for a Google sign-in window and make sure this Chrome profile is signed in, then try again."));
+    }, 10000);
+    try {
+      chrome.identity.getAuthToken({ interactive, enableGranularPermissions: true }, (token) => {
+        clearTimeout(timeout);
+        const err = chrome.runtime.lastError;
+        if (err || !token) {
+          reject(new Error(err ? err.message : "No auth token returned."));
+          return;
+        }
+        resolve(token);
+      });
+    } catch (err) {
+      clearTimeout(timeout);
+      reject(err);
+    }
   });
 }
 
 function removeCachedToken(token) {
+  if (globalThis.GC_AUTH_CONFIG && GC_AUTH_CONFIG.authOrigin) {
+    return sendMessage({ type: "invalidateAuth" }).then(response => {
+      if (!response || !response.ok) throw new Error("Could not refresh the account session.");
+    });
+  }
   return new Promise((resolve) => {
     if (!token) {
       resolve();
@@ -161,15 +184,6 @@ function removeCachedToken(token) {
   });
 }
 
-function clearAllCachedTokens() {
-  return new Promise((resolve) => {
-    if (!chrome.identity.clearAllCachedAuthTokens) {
-      resolve();
-      return;
-    }
-    chrome.identity.clearAllCachedAuthTokens(() => resolve());
-  });
-}
 
 function isUserCancelled(err) {
   const msg = (err && err.message || "").toLowerCase();
@@ -185,6 +199,7 @@ function sendMessage(message) {
 async function driveFetch(pathAndQuery, options = {}, allowRetry = true) {
   const res = await fetch(DRIVE_API + pathAndQuery, {
     ...options,
+    signal: options.signal || AbortSignal.timeout(30000),
     headers: {
       ...(options.headers || {}),
       Authorization: `Bearer ${state.token}`,
@@ -480,13 +495,18 @@ function renderJob(job) {
 
   if (job.status === "processing") {
     el.jobStatusText.textContent = `Cleaning up: ${done} of ${total} processed`;
-  } else if (job.status === "paused_reauth") {
+  } else if (job.status === "paused_reauth" || job.status === "paused_disconnected") {
     el.jobStatusText.textContent = `Paused: ${done} of ${total} processed`;
   } else if (job.status === "done") {
     el.jobStatusText.textContent = `Done: ${counts.ok} moved, ${counts.failed} failed`;
   }
 
-  el.jobReauthNotice.classList.toggle("hidden", job.status !== "paused_reauth");
+  const paused = job.status === "paused_reauth" || job.status === "paused_disconnected";
+  el.jobReauthNotice.classList.toggle("hidden", !paused);
+  el.reconnectBtn.textContent = "Resume";
+  if (job.status === "paused_disconnected") {
+    el.jobReauthNotice.firstChild.textContent = "Disconnected. Reconnect, then choose Resume to continue. ";
+  }
   if (job.status === "paused_reauth" && job.reauthMessage) {
     el.jobReauthNotice.firstChild.textContent = job.reauthMessage + " ";
   }
@@ -500,7 +520,7 @@ function renderJob(job) {
     el.jobResultList.appendChild(li);
   }
 
-  el.retryFailedBtn.classList.toggle("hidden", counts.failed === 0 || job.status === "processing");
+  el.retryFailedBtn.classList.toggle("hidden", counts.failed === 0 || job.status === "processing" || job.status === "paused_disconnected");
   el.dismissJobBtn.classList.toggle("hidden", job.status !== "done");
 }
 
@@ -540,16 +560,20 @@ function showConnectedUI() {
   el.bottomBar.classList.remove("hidden");
 }
 
-async function connect() {
+async function connect(options = {}) {
   clearError();
   if (isPlaceholderClientId()) {
     showError("Configure a real OAuth client ID in manifest.json first.");
     return;
   }
   el.connectBtn.disabled = true;
+  accountConnectionPending = true;
   el.connectBtn.textContent = "Connecting...";
   try {
-    state.token = await getAuthToken(true);
+    const token = await getAuthToken(true, options.chooseAccount === true);
+    // Only replace the old account's UI and selections after sign-in succeeds.
+    if (options.chooseAccount === true) resetToSignedOut();
+    state.token = token;
     state.email = await fetchAccountEmail();
     showConnectedUI();
     await loadFiles();
@@ -559,9 +583,23 @@ async function connect() {
     el.connectBtn.textContent = "Connect Google Drive";
     if (isUserCancelled(err)) {
       showError("Sign-in was canceled.");
+    } else if (err.name === "TimeoutError") {
+      showError("Google Drive did not respond. Check your connection, then try again.");
     } else {
       showError(`Could not connect: ${err.message}`);
     }
+  } finally {
+    accountConnectionPending = false;
+    el.connectBtn.disabled = false;
+  }
+}
+
+function handleAuthSessionChange(changes, area) {
+  const change = changes.googleCleanerAuthSession;
+  if (area !== "session" || !change || accountConnectionPending || !state.token) return;
+  if (!change.newValue || change.oldValue?.sessionId !== change.newValue.sessionId) {
+    resetToSignedOut();
+    showError("The account session changed in another window. Connect again to reload the selected account.");
   }
 }
 
@@ -581,25 +619,56 @@ function resetToSignedOut() {
 async function disconnect() {
   clearError();
   closeAccountMenu();
-  if (state.token) {
-    await removeCachedToken(state.token);
+  try {
+    const resp = await sendMessage({ type: "disconnectJob" });
+    if (!resp || !resp.ok) throw new Error((resp && resp.error) || "Could not pause cleanup.");
+    if (globalThis.GC_AUTH_CONFIG && GC_AUTH_CONFIG.authOrigin) {
+      const cleared = await sendMessage({ type: "clearAuth" });
+      if (!cleared || !cleared.ok) throw new Error("Could not clear the account session.");
+    } else if (state.token) await removeCachedToken(state.token);
+    resetToSignedOut();
+    await refreshJobView();
+  } catch (err) {
+    showError(`Could not disconnect: ${err.message}`);
   }
-  resetToSignedOut();
 }
 
 async function switchAccount() {
   clearError();
   closeAccountMenu();
-  const job = await getCurrentJob();
-  if (GCLib.isJobActive(job)) {
-    showError("A cleanup job is running under the current account. Finish, retry, or dismiss it before switching accounts.");
-    return;
+  try {
+    const response = await sendMessage({ type: "getJob" });
+    if (!response || !response.ok) throw new Error("Could not check the current cleanup job. Try again.");
+    const job = response.job;
+    if (GCLib.isJobActive(job)) {
+      showError("A cleanup job is running under the current account. Finish, retry, or dismiss it before switching accounts.");
+      return;
+    }
+    // Keep the sign-in page alive when Google's consent window takes focus.
+    await chrome.windows.create({ url: chrome.runtime.getURL("popup.html?chooseAccount=1"), type: "popup", width: 440, height: 680 });
+  } catch (err) {
+    showError(`Could not switch accounts: ${err.message}`);
   }
-  // Genuinely re-prompts the Google account chooser: clears every cached
-  // token for this extension, then requests a fresh interactive token.
-  await clearAllCachedTokens();
-  resetToSignedOut();
-  await connect();
+}
+
+async function chooseAccountAndConnect() {
+  clearError();
+  el.connectBtn.disabled = true;
+  try {
+    // Check again: a cleanup could have started since this tab was opened.
+    const response = await sendMessage({ type: "getJob" });
+    if (!response || !response.ok) throw new Error("Could not check the current cleanup job. Try again.");
+    const job = response.job;
+    if (GCLib.isJobActive(job)) {
+      throw new Error("Finish or dismiss the current cleanup job before switching accounts.");
+    }
+    await connect({ chooseAccount: true });
+  } catch (err) {
+    showError(`Could not switch accounts: ${err.message}`);
+  } finally {
+    el.connectBtn.disabled = false;
+    el.connectBtn.textContent = "Continue with Google";
+  }
 }
 
 function openAccountMenu() {
@@ -686,8 +755,10 @@ async function dismissJob() {
 async function reconnectJob() {
   clearError();
   try {
-    const token = await getAuthToken(true);
-    state.token = token;
+    if (!state.token) {
+      showError("Connect Google Drive first, then choose Resume.");
+      return;
+    }
     const email = await fetchAccountEmail();
     const job = await getCurrentJob();
     if (job && job.account && job.account !== email) {
@@ -738,7 +809,12 @@ function init() {
     el.connectBtn.disabled = true;
   }
 
-  el.connectBtn.addEventListener("click", connect);
+  const choosingAccount = new URLSearchParams(window.location.search).has("chooseAccount");
+  if (choosingAccount) {
+    document.querySelector(".connect-explain").textContent = "Choose the Google Drive account you want to clean. Google will open its secure account chooser; GoogleCleaner never asks for your password.";
+    el.connectBtn.textContent = "Continue with Google";
+  }
+  el.connectBtn.addEventListener("click", choosingAccount ? chooseAccountAndConnect : connect);
   el.refreshBtn.addEventListener("click", loadFiles);
 
   el.accountMenuBtn.addEventListener("click", (event) => {
@@ -833,6 +909,7 @@ function init() {
 
   // Live updates while the popup is open, driven by the background job.
   chrome.storage.onChanged.addListener((changes, area) => {
+    handleAuthSessionChange(changes, area);
     if (area === "local" && changes.cleanupJob) {
       renderJob(changes.cleanupJob.newValue || null);
     }
