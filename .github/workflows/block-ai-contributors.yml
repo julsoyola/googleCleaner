@@ -1,0 +1,89 @@
+name: Block AI contributor trailers
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+  push:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  scan:
+    name: Check commit attribution
+    if: github.event.deleted != true
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Fetch commit history
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Check incoming commit messages
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          PR_BASE: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD: ${{ github.event.pull_request.head.sha }}
+          PUSH_BEFORE: ${{ github.event.before }}
+          PUSH_AFTER: ${{ github.event.after }}
+        run: |
+          set -euo pipefail
+
+          zero=0000000000000000000000000000000000000000
+          pattern='(^|\\n)[[:space:]]*Co-authored-by:[[:space:]].*(copilot|codex|amazon-q|cursor)'
+          identity_pattern='copilot|codex|amazon-q|cursor'
+
+          if [[ "$EVENT_NAME" == "pull_request" ]]; then
+            base="$PR_BASE"
+            head="$PR_HEAD"
+          elif [[ "$EVENT_NAME" == "push" ]]; then
+            base="$PUSH_BEFORE"
+            head="$PUSH_AFTER"
+          else
+            # Reusable calls without a push/PR payload scan HEAD.
+            base=""
+            head="$(git rev-parse HEAD)"
+          fi
+
+          git cat-file -e "${head}^{commit}"
+          if [[ -n "$base" && "$base" != "$zero" ]]; then
+            if ! git cat-file -e "${base}^{commit}" 2>/dev/null; then
+              echo "::error::Cannot inspect the event base commit. History may have been force-pushed or removed. Restore access to the base commit and rerun this check."
+              exit 1
+            fi
+            range="${base}..${head}"
+          else
+            # New refs have no previous tip; scan reachable history.
+            range="$head"
+          fi
+
+          commits="$(mktemp)"
+          message="$(mktemp)"
+          trap 'rm -f "$commits" "$message"' EXIT
+          git rev-list "$range" > "$commits"
+          failed=0
+          scanned=0
+
+          while IFS= read -r sha; do
+            scanned=$((scanned + 1))
+            git show -s --format=%B "$sha" > "$message"
+            identity="$(git show -s --format='%an <%ae>%n%cn <%ce>' "$sha")"
+            if LC_ALL=C grep -Eiq "$identity_pattern" <<< "$identity"; then
+              echo "::error title=AI commit identity detected::Commit $sha has author or committer metadata matching Copilot, Codex, Amazon-Q, or Cursor. Review the actual authorship before correcting metadata. Do not relabel another contributor's work."
+              failed=1
+            fi
+            if LC_ALL=C grep -Eiq "$pattern" "$message"; then
+              echo "::error title=AI co-author attribution detected::Commit $sha contains a Co-authored-by line matching Copilot, Codex, Amazon-Q, or Cursor. Rebase and edit the affected commit messages to remove only the prohibited attribution lines, preserve file changes and other authors, then push the corrected branch and rerun this check."
+              failed=1
+            fi
+          done < "$commits"
+
+          if [[ "$failed" -ne 0 ]]; then
+            echo "Attribution policy failed. No commits were modified."
+            exit 1
+          fi
+          echo "Passed: checked $scanned commit messages."
