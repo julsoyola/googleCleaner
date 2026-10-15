@@ -2,21 +2,35 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>GooSweep - Privacy Policy</title>
+  <title>GoogleCleaner - Privacy Policy</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 </head>
 <body>
   <h1>Privacy Policy</h1>
-  <p>Last updated: October 4, 2026.</p>
-  <p>GooSweep is a Chrome extension for reviewing and filtering files and folders
+  <p>Last updated: October 14, 2026.</p>
+  <p>GoogleCleaner is a Chrome extension for reviewing and filtering files and folders
      you own in Google Drive and moving user-selected items to Trash.</p>
   <p>The extension accesses your Google account email address and display name, OAuth
      access tokens, and Google Drive metadata: item IDs, names, types, modification
      dates, sizes, and links. The display name is requested but not used. Document
      contents are not downloaded or read.</p>
-  <p>OAuth access tokens are managed through Chrome's <code>chrome.identity</code> API,
-     held in memory by the extension, and sent to Google for authorized API requests.
-     The extension does not access passwords or store tokens in cleanup jobs.</p>
+  <p>When the Vercel account chooser is configured, Google handles sign-in and
+     account selection in its own window. The extension validates the returned
+     OAuth state and uses PKCE to bind authorization codes to the sign-in request.
+     A developer-operated authentication service hosted on Vercel exchanges codes
+     and refreshes sessions with Google. It receives authorization codes, PKCE
+     verifiers, and encrypted refresh handles, and returns access tokens. It does
+     not receive Drive file metadata, file contents, or passwords. The service
+     does not persist tokens or log request bodies or token responses in its code.
+     Network requests are processed by Vercel as the hosting provider.</p>
+  <p>Access tokens and encrypted refresh handles are held in
+     <code>chrome.storage.session</code> during the browser session, outside
+     cleanup jobs. The service encrypts refresh handles using AES-256-GCM; handles
+     expire seven days after issuance. Restarting Chrome clears the extension's
+     session storage. Without the Vercel service configured, the extension uses
+     Chrome's native <code>chrome.identity.getAuthToken</code> token cache instead.
+     The extension never collects Google passwords or embeds the Web OAuth client
+     secret.</p>
   <p>Drive metadata and your search, filter, sorting, and selection choices are
      processed in the extension's memory. Cleanup jobs are stored on your device
      using <code>chrome.storage.local</code>. They include account email, a job ID,
@@ -26,22 +40,24 @@
   <p>Cleanup jobs and results remain locally until dismissed or replaced by a new
      job. Disconnecting does not clear them. Completed jobs can be dismissed in
      the extension; active or paused jobs must be completed before dismissal.</p>
-  <p>API requests go directly to Google. They send authorization tokens, listing
+  <p>Drive API requests go directly to Google. They send authorization tokens, listing
      queries, pagination tokens, and selected item IDs with instructions to move
      those items to Trash. Google returns account information, file metadata, and
      API responses. The extension does not upload file names or its local results
      log. Clicking an item's link opens the destination supplied by Google.</p>
-  <p>The audited extension code contains no analytics, advertising, or uploads to
-     developer servers. User data is not sold, used or transferred for purposes
-     unrelated to GooSweep's functionality, or used or transferred to
+  <p>The extension contains no analytics or advertising. The configured Vercel
+     authentication service receives only the authorization data described above;
+     file names, file contents, and cleanup results are not uploaded to it. User data is not sold, used or transferred for purposes
+     unrelated to GoogleCleaner's functionality, or used or transferred to
      determine creditworthiness or for lending purposes.</p>
-  <p>GooSweep's use and transfer of information received from Google APIs
+  <p>GoogleCleaner's use and transfer of information received from Google APIs
      complies with the <a href="https://developers.google.com/terms/api-services-user-data-policy">Google API Services User Data Policy</a>,
      including the Limited Use requirements.</p>
   <p>To disconnect, choose Disconnect in the extension's account menu. This first
      saves a user-disconnected pause for any active cleanup job and cancels its
-     scheduled wake-ups, then removes the current cached access token and clears
-     the popup's in-memory account and file state. No new requests to move items
+     scheduled wake-ups, then clears the configured Vercel session from the browser (or removes the
+     current native cached access token) and clears the popup's in-memory account
+     and file state. No new requests to move items
      to Trash are sent while the job is paused. A request
      already sent may finish, and its result is saved. Progress and results remain
      stored locally. Reconnecting does not resume cleanup automatically: choose

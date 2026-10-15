@@ -1,9 +1,17 @@
 # GoogleCleaner (personal-use Chrome extension)
 
 A Manifest V3, plain-JS extension to review your own Google Drive files and
-move selected items to Trash. No build step, no framework, no third-party
-servers. It never permanently deletes files, never empties Trash, and only
+move selected items to Trash. No build step or framework. The optional Vercel
+service enables Google account selection. It never permanently deletes files, never empties Trash, and only
 acts on items you explicitly select.
+
+## Account chooser with Vercel
+
+For explicit Google account selection, use
+[`auth-backend/README.md`](../auth-backend/README.md). It documents the
+Web OAuth client, Vercel setup, exact host permission, and verification.
+The native Chrome-profile setup below remains the fallback when the
+auth service has not been configured.
 
 ## 1. Load the extension
 

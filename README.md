@@ -19,10 +19,27 @@ A personal Chrome extension for reviewing your own Google Drive files and moving
 
 ## Install locally
 
-This extension isn't published on the Chrome Web Store — load it as an unpacked extension:
+The extension is [available on the Chrome Web Store](https://chromewebstore.google.com/detail/googlecleaner/acijddppbcekpnlddndfomahlpgcnfoe).
+To test local code changes, load an unpacked copy:
 
 1. Open `chrome://extensions`, enable **Developer mode**, and **Load unpacked** the `extension/` folder.
 2. Follow [`extension/README.md`](extension/README.md) to set up your own Chrome Extension OAuth client and configure it in `extension/manifest.json`.
+
+## Switch accounts
+
+The account chooser uses a small Vercel auth service. Follow
+[`auth-backend/README.md`](auth-backend/README.md) to configure its
+Google Web OAuth client and Vercel environment variables.
+
+After setup, open the account menu → **Switch account** →
+**Continue with Google**. The app-styled window opens Google's own
+account chooser. One account is active at a time; old selections are
+cleared on successful sign-in. Active cleanup jobs block switching.
+
+Until configured, ordinary Chrome-profile sign-in still works, while
+Switch account explains the required setup. Web Store publication and
+Google OAuth access are separate settings; Testing-mode OAuth apps
+only allow configured test users.
 
 ## How cleanup works
 
