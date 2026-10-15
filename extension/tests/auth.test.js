@@ -80,19 +80,17 @@ test("synchronous identity errors clear the timeout and restore the button", asy
   assert.match(p.nodes.get("errorBanner").textContent, /Identity unavailable/);
 });
 
-test("switch opens an app window without clearing tokens", async () => {
+test("switch launches Google authentication directly without creating an app window", async () => {
   const p = popup();
   p.context.GCLib = { isJobActive: () => false };
   p.context.chrome.runtime.sendMessage = async () => ({ ok: true, job: null });
-  p.context.chrome.runtime.getURL = value => `chrome-extension://test/${value}`;
-  let opened;
-  p.context.chrome.windows = { create: async options => { assert.equal(options.type, "popup"); opened = options.url; } };
+  p.evaluate("connect = async options => { globalThis.switchRequested = options.chooseAccount; }");
   await p.evaluate("switchAccount()");
-  assert.equal(opened, "chrome-extension://test/popup.html?chooseAccount=1");
+  assert.equal(p.context.switchRequested, true);
   assert.equal(p.timers.size, 0);
 });
 
-test("active jobs block switching before opening a tab", async () => {
+test("active jobs block switching before authentication", async () => {
   const p = popup();
   p.context.GCLib = { isJobActive: () => true };
   p.context.chrome.runtime.sendMessage = async () => ({ ok: true, job: { status: "processing" } });
@@ -100,21 +98,12 @@ test("active jobs block switching before opening a tab", async () => {
   assert.match(p.nodes.get("errorBanner").textContent, /cleanup job is running/);
 });
 
-test("chooser rechecks jobs before clearing authorization", async () => {
-  const p = popup();
-  p.context.GCLib = { isJobActive: () => true };
-  p.context.chrome.runtime.sendMessage = async () => ({ ok: true, job: { status: "processing" } });
-  await p.evaluate("chooseAccountAndConnect()");
-  assert.equal(p.nodes.get("connectBtn").disabled, false);
-  assert.match(p.nodes.get("errorBanner").textContent, /current cleanup job/);
-});
-
 test("unconfigured chooser shows setup instructions without clearing selections", async () => {
   const p = popup();
   p.context.GCLib = { isJobActive: () => false };
   p.context.chrome.runtime.sendMessage = async () => ({ ok: true, job: null });
   p.evaluate("state.selectedIds.add('old-account-file')");
-  await p.evaluate("chooseAccountAndConnect()");
+  await p.evaluate("switchAccount()");
   assert.equal(p.evaluate("state.selectedIds.size"), 1);
   assert.equal(p.nodes.get("connectBtn").disabled, false);
   assert.match(p.nodes.get("errorBanner").textContent, /Vercel account chooser/);
@@ -123,7 +112,7 @@ test("unconfigured chooser shows setup instructions without clearing selections"
 test("failed job lookup cannot bypass the switching safeguard", async () => {
   const p = popup();
   p.context.chrome.runtime.sendMessage = async () => ({ ok: false });
-  await p.evaluate("chooseAccountAndConnect()");
+  await p.evaluate("switchAccount()");
   assert.equal(p.nodes.get("connectBtn").disabled, false);
   assert.match(p.nodes.get("errorBanner").textContent, /Could not check the current cleanup job/);
 });
@@ -143,7 +132,7 @@ test("switch commits the new account without carrying old selections or files", 
     loadFiles = async () => {};
     refreshJobView = async () => {};
   `);
-  await p.evaluate("chooseAccountAndConnect()");
+  await p.evaluate("switchAccount()");
   assert.equal(p.evaluate("state.email"), "second@example.test");
   assert.equal(p.evaluate("state.token"), "new-account-token");
   assert.equal(p.evaluate("state.selectedIds.size"), 0);
@@ -166,4 +155,30 @@ test("refreshing the same account session preserves the current UI", () => {
   p.context.change = { googleCleanerAuthSession: { oldValue: { sessionId: "same" }, newValue: { sessionId: "same" } } };
   p.evaluate("handleAuthSessionChange(change, 'session')");
   assert.equal(p.evaluate("state.token"), "existing-token");
+});
+
+test("popup restores a cached account without interactive sign-in", async () => {
+  const p = popup();
+  p.context.GC_AUTH_CONFIG = { authOrigin: "https://auth.example.test" };
+  p.context.chrome.runtime.sendMessage = async message => {
+    assert.equal(message.interactive, false);
+    return { ok: true, token: "cached-token" };
+  };
+  p.evaluate(`fetchAccountEmail = async () => 'cached@example.test'; loadFiles = async () => {}; refreshJobView = async () => {};`);
+  await p.evaluate("restoreSession()");
+  assert.equal(p.evaluate("state.token"), "cached-token");
+  assert.equal(p.evaluate("state.email"), "cached@example.test");
+  assert.equal(p.nodes.get("connectBtn").disabled, false);
+});
+
+test("popup with no session stays signed out without opening Google", async () => {
+  const p = popup();
+  p.context.GC_AUTH_CONFIG = { authOrigin: "https://auth.example.test" };
+  p.context.chrome.runtime.sendMessage = async message => {
+    assert.equal(message.interactive, false);
+    return { ok: false, error: "Connect Google Drive" };
+  };
+  await p.evaluate("restoreSession()");
+  assert.equal(p.evaluate("state.token"), null);
+  assert.equal(p.nodes.get("connectBtn").disabled, false);
 });

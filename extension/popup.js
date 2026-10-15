@@ -207,9 +207,9 @@ async function driveFetch(pathAndQuery, options = {}, allowRetry = true) {
   });
 
   if (res.status === 401 && allowRetry) {
-    // Token expired or revoked: drop cache and re-request interactively once.
+    // Refresh silently; only Connect and Switch account may open sign-in UI.
     await removeCachedToken(state.token);
-    state.token = await getAuthToken(true);
+    state.token = await getAuthToken(false);
     return driveFetch(pathAndQuery, options, false);
   }
 
@@ -594,6 +594,25 @@ async function connect(options = {}) {
   }
 }
 
+async function restoreSession() {
+  if (!globalThis.GC_AUTH_CONFIG?.authOrigin || accountConnectionPending) return;
+  accountConnectionPending = true;
+  el.connectBtn.disabled = true;
+  try {
+    state.token = await getAuthToken(false);
+    state.email = await fetchAccountEmail();
+    showConnectedUI();
+    await loadFiles();
+    await refreshJobView();
+  } catch (_) {
+    // No cached session is normal. Leave Connect available without prompting.
+    resetToSignedOut();
+  } finally {
+    accountConnectionPending = false;
+    el.connectBtn.disabled = false;
+  }
+}
+
 function handleAuthSessionChange(changes, area) {
   const change = changes.googleCleanerAuthSession;
   if (area !== "session" || !change || accountConnectionPending || !state.token) return;
@@ -644,30 +663,9 @@ async function switchAccount() {
       showError("A cleanup job is running under the current account. Finish, retry, or dismiss it before switching accounts.");
       return;
     }
-    // Keep the sign-in page alive when Google's consent window takes focus.
-    await chrome.windows.create({ url: chrome.runtime.getURL("popup.html?chooseAccount=1"), type: "popup", width: 440, height: 680 });
-  } catch (err) {
-    showError(`Could not switch accounts: ${err.message}`);
-  }
-}
-
-async function chooseAccountAndConnect() {
-  clearError();
-  el.connectBtn.disabled = true;
-  try {
-    // Check again: a cleanup could have started since this tab was opened.
-    const response = await sendMessage({ type: "getJob" });
-    if (!response || !response.ok) throw new Error("Could not check the current cleanup job. Try again.");
-    const job = response.job;
-    if (GCLib.isJobActive(job)) {
-      throw new Error("Finish or dismiss the current cleanup job before switching accounts.");
-    }
     await connect({ chooseAccount: true });
   } catch (err) {
     showError(`Could not switch accounts: ${err.message}`);
-  } finally {
-    el.connectBtn.disabled = false;
-    el.connectBtn.textContent = "Continue with Google";
   }
 }
 
@@ -809,12 +807,7 @@ function init() {
     el.connectBtn.disabled = true;
   }
 
-  const choosingAccount = new URLSearchParams(window.location.search).has("chooseAccount");
-  if (choosingAccount) {
-    document.querySelector(".connect-explain").textContent = "Choose the Google Drive account you want to clean. Google will open its secure account chooser; GoogleCleaner never asks for your password.";
-    el.connectBtn.textContent = "Continue with Google";
-  }
-  el.connectBtn.addEventListener("click", choosingAccount ? chooseAccountAndConnect : connect);
+  el.connectBtn.addEventListener("click", connect);
   el.refreshBtn.addEventListener("click", loadFiles);
 
   el.accountMenuBtn.addEventListener("click", (event) => {
@@ -916,6 +909,7 @@ function init() {
   });
 
   refreshJobView();
+  restoreSession();
 }
 
 document.addEventListener("DOMContentLoaded", init);

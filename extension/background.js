@@ -245,6 +245,10 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
         }
         try {
           const token = await GCAuth.getToken(Boolean(message.interactive), Boolean(message.chooseAccount));
+          if (message.interactive && chrome.action?.openPopup) {
+            try { await chrome.action.openPopup(); }
+            catch (_) { /* Older Chrome or an already-open popup: reopen from the toolbar. */ }
+          }
           return { ok: true, token };
         } finally {
           if (message.chooseAccount) accountSwitchPending = false;

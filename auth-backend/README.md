@@ -79,8 +79,10 @@ Switch account reports a setup error until the new service is configured.
 ## 5. Verify in Chrome
 
 1. Connect an account. Google should open its own account chooser.
-2. In the account menu, choose Switch account. An app-styled window
-   opens. Click Continue with Google and select your other account.
+2. In the account menu, choose Switch account and select your other
+   account directly in Google's window. There is no extra app window.
+   Chrome 127+ can reopen the extension popup after successful sign-in;
+   on older versions, reopen it from the toolbar.
 3. Confirm its email and files appear, with no old selections.
 4. Cancel sign-in and verify it does not replace the existing session.
 5. With a disposable file, verify review, cleanup, job recovery and
