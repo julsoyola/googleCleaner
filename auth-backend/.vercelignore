@@ -1,0 +1,11 @@
+# Private local state and credentials are never deployment inputs.
+.git/
+.vercel/
+.private/
+**/.private/
+**/.local/
+.env
+.env.*
+*.pem
+tests/
+client_secret*.json

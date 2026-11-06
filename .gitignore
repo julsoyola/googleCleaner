@@ -8,3 +8,9 @@ node_modules/
 client_secret*.json
 
 /site/
+
+# Private local files; never publish.
+/.private/
+
+# Local credentials.
+*.pem
