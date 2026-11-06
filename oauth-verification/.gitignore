@@ -1,0 +1,8 @@
+# Generated media, private run metadata, logs, and recorder profiles.
+/.local/
+
+# Recordings remain private even outside the run directory.
+*.mp4
+*.webm
+*.mov
+*.pem
